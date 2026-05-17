@@ -11,8 +11,9 @@ __pycache__/
 # uv
 .python-version
 
-# Local data cache (regenerated from yfinance / CNN)
-data/
+# Local data cache (regenerated from yfinance / CNN).
+# Anchored to repo root with leading slash so it doesn't also match src/data/.
+/data/
 
 # OS
 .DS_Store
