@@ -30,6 +30,10 @@ class RunConfig:
     total_budget: float = 10_000.0
     commission_bps: float = 5.0
     slippage_bps: float = 5.0
+    # Strategy-agnostic options for data loaders (e.g. {"fg_source": "whit3rabbit"}).
+    # Kept separate from `params` because data-source choice is a backend concern,
+    # not a strategy parameter.
+    data_options: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -188,7 +192,8 @@ def _build_context(
             fg = extras["fear_greed"]
         else:
             from .data.fear_greed import load_fear_greed
-            fg = load_fear_greed(config.start, config.end)
+            fg_source = config.data_options.get("fg_source", "cnn")
+            fg = load_fear_greed(config.start, config.end, source=fg_source)
         # Align to trading days. F&G is daily including weekends/holidays; forward-fill.
         fg_aligned = fg.reindex(prices.index.union(fg.index)).sort_index().ffill().reindex(prices.index)
         context["fear_greed"] = fg_aligned
@@ -234,5 +239,8 @@ def run(
 
 
 def _build_run_id(config: RunConfig) -> str:
-    ts = pd.Timestamp.now(tz="UTC").strftime("%Y%m%d-%H%M%S")
+    # Millisecond precision — earlier "seconds-only" format collided when two runs
+    # of the same strategy/ticker fired in the same second (e.g. seeding scripts).
+    now = pd.Timestamp.now(tz="UTC")
+    ts = now.strftime("%Y%m%d-%H%M%S") + f"{int(now.microsecond / 1000):03d}"
     return f"{ts}_{config.strategy}_{config.ticker.upper()}"

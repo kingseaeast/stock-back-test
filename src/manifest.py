@@ -27,6 +27,7 @@ def _run_to_entry(result: Result, html_relative: str) -> dict:
         "end": cfg.end.isoformat(),
         "total_budget": cfg.total_budget,
         "params": cfg.params,
+        "data_options": cfg.data_options,
         "metrics": result.strategy.metrics,
         "benchmarks": [
             {"name": b.name, "metrics": b.metrics} for b in result.benchmarks

@@ -73,7 +73,7 @@ Open `docs/index.html` locally, or push to GitHub and view via Pages.
 | `dca` | Split `--budget` into equal contributions on a cadence (`weekly`, `biweekly`, `monthly`). | `cadence` |
 | `dca_btd` | DCA most of the budget, hold back a reserve to buy on N-day drawdowns. | `cadence`, `dip_reserve_pct`, `dip_threshold_pct`, `dip_lookback`, `dip_buys` |
 | `rsi` | All-in / all-out on Wilder RSI thresholds. Starts invested (or pass `start_in_cash`). | `period`, `oversold`, `overbought`, `start_in_cash` |
-| `fear_greed` | All-in / all-out on the CNN Fear & Greed index. Starts in cash by default. **Note: CNN's public endpoint only serves ~1 year of history.** | `buy_below`, `exit_above`, `index_type`, `start_in_market` |
+| `fear_greed` | All-in / all-out on the CNN Fear & Greed index. Starts in cash by default. Two data sources: `--fg-source cnn` (default, ~5.5y, includes sub-indices) or `--fg-source whit3rabbit` (~15y back to 2011, headline score only — community mirror, no license). | `buy_below`, `exit_above`, `index_type`, `start_in_market` |
 
 Every run compares against **both** `buy_hold` and `dca_monthly` benchmarks on
 the same ticker, window, and budget (when not redundant with the strategy

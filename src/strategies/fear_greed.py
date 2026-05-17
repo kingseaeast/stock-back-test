@@ -21,8 +21,10 @@ class FearGreed:
         "safe-haven demand. We buy the ticker when sentiment falls below "
         "buy_below (default 25, 'extreme fear') and exit to cash when it climbs "
         "above exit_above (default 75, 'extreme greed'). The premise is that "
-        "crowd extremes mark turning points. CNN's public endpoint only serves "
-        "roughly the last year of data, so backtest windows are short."
+        "crowd extremes mark turning points. Two data sources are available "
+        "(picked via --fg-source): 'cnn' uses the live CNN endpoint (~5.5 years "
+        "of history, includes component sub-indices), 'whit3rabbit' uses a "
+        "community CSV mirror reaching back to 2011-01-03 (headline score only)."
     )
     data_requirements = frozenset({"prices", "fear_greed"})
 

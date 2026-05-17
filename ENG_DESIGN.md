@@ -124,11 +124,12 @@ Final value, not just CAGR, is the headline number because DCA strategies don't 
 - Use **adjusted close** for all strategy and metric calculations.
 
 ### `data/fear_greed.py`
-- `load_fear_greed(start, end) -> pd.DataFrame` with columns `[fear_greed, momentum, strength, breadth, put_call, junk_demand, volatility, safe_haven]` indexed by date (one column per CNN sub-index; main index in `fear_greed`).
-- Source: `https://production.dataviz.cnn.io/index/fearandgreed/graphdata` (unofficial; user-agent header required).
-- Cache to `data/fear_greed.parquet`. Single shared file — F&G is not per-ticker.
-- History limit: CNN serves roughly the last 3 years. The fetcher raises a clear error if the requested `start` predates available data; the engine surfaces this to the user/agent.
-- If the endpoint changes/breaks, this is the only file that needs updating; the adapter interface stays the same.
+- `load_fear_greed(start, end, source="cnn")` returns a `pd.DataFrame` indexed by date with column `fear_greed` (plus per-component sub-indices when the source provides them).
+- **Source: `"cnn"`** (default). Hits `https://production.dataviz.cnn.io/index/fearandgreed/graphdata/<start>` (unofficial; browser headers required). Returns the headline score plus component sub-indices (`market_momentum_sp500`, `market_volatility_vix`, `safe_haven_demand`, etc.). Earliest date the API serves: **2020-09-18** (anything earlier returns HTTP 500).
+- **Source: `"whit3rabbit"`**. Pulls `https://raw.githubusercontent.com/whit3rabbit/fear-greed-data/main/fear-greed.csv` — a community-maintained mirror refreshed weekly via GitHub Actions. Reaches back to **2011-01-03**. Headline score only. The repo has no license, so this source is for personal/research use only.
+- Per-source Parquet caches under `data/fear_greed_<source>.parquet` so the two never overwrite each other.
+- Fetchers honor an injected `fetch` callable so tests use captured fixtures and never touch the network.
+- Source is selected at run time via `RunConfig.data_options["fg_source"]` (CLI: `--fg-source`).
 
 ### `strategies/`
 - Each strategy lives in its own file; registered in `strategies/__init__.py` via a `REGISTRY: dict[str, type[Strategy]]`.

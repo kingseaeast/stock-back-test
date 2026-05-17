@@ -113,7 +113,8 @@ def render(result: Result, output_path: Path) -> Path:
     if show_fg:
         from .data.fear_greed import load_fear_greed
         fg_index_col = cfg.params.get("index_type", "fear_greed")
-        fg_df = load_fear_greed(cfg.start, cfg.end)
+        fg_source = cfg.data_options.get("fg_source", "cnn")
+        fg_df = load_fear_greed(cfg.start, cfg.end, source=fg_source)
         fg_series = fg_df[fg_index_col].reindex(prices.index.union(fg_df.index)).ffill().reindex(prices.index)
 
     # Subplot layout
@@ -229,6 +230,12 @@ def render(result: Result, output_path: Path) -> Path:
     params_json = json.dumps(cfg.params or {})
     strategy_cls = strategies.get(cfg.strategy)
     description = html_lib.escape(getattr(strategy_cls, "description", "") or "")
+    data_options_html = ""
+    if cfg.data_options:
+        data_options_html = (
+            f'<p class="meta"><strong>Data options:</strong> '
+            f'<code>{html_lib.escape(json.dumps(cfg.data_options))}</code></p>'
+        )
     header_html = f"""
     <header>
       <h1>{cfg.strategy} on {cfg.ticker}</h1>
@@ -240,6 +247,7 @@ def render(result: Result, output_path: Path) -> Path:
         <strong>Slippage:</strong> {cfg.slippage_bps} bps
       </p>
       <p class="meta"><strong>Params:</strong> <code>{params_json}</code></p>
+      {data_options_html}
       <p class="note">Idle cash earns 0% in this model. Orders execute at next trading day's adjusted close.</p>
     </header>
     """

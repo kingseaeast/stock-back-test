@@ -33,6 +33,9 @@ def _parse_params(s: str) -> dict:
 
 
 def cmd_run(args: argparse.Namespace) -> int:
+    data_options: dict = {}
+    if args.fg_source:
+        data_options["fg_source"] = args.fg_source
     config = RunConfig(
         strategy=args.strategy,
         ticker=args.ticker.upper(),
@@ -42,6 +45,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         total_budget=args.budget,
         commission_bps=args.commission_bps,
         slippage_bps=args.slippage_bps,
+        data_options=data_options,
     )
     result = run(config)
     html_path = REPORTS_DIR / f"{result.run_id}.html"
@@ -97,6 +101,10 @@ def build_parser() -> argparse.ArgumentParser:
     pr.add_argument("--params", type=_parse_params, default={})
     pr.add_argument("--commission-bps", type=float, default=5.0)
     pr.add_argument("--slippage-bps", type=float, default=5.0)
+    pr.add_argument(
+        "--fg-source", choices=["cnn", "whit3rabbit"], default=None,
+        help="F&G data source (default cnn ~5.5y; whit3rabbit ~15y back to 2011)",
+    )
     pr.set_defaults(func=cmd_run)
 
     pl = sub.add_parser("list-strategies", help="List registered strategies (name + one-line description)")
