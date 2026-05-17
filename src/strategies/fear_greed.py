@@ -27,6 +27,32 @@ class FearGreed:
         "community CSV mirror reaching back to 2011-01-03 (headline score only)."
     )
     data_requirements = frozenset({"prices", "fear_greed"})
+    param_schema: list[dict] = [
+        {
+            "name": "buy_below", "type": "number", "default": 25,
+            "min": 1, "max": 49, "step": 1,
+            "label": "Buy when F&G below",
+        },
+        {
+            "name": "exit_above", "type": "number", "default": 75,
+            "min": 51, "max": 99, "step": 1,
+            "label": "Exit when F&G above",
+        },
+        {
+            "name": "index_type", "type": "select", "default": "fear_greed",
+            "options": [
+                "fear_greed", "market_momentum_sp500", "stock_price_strength",
+                "stock_price_breadth", "put_call_options", "market_volatility_vix",
+                "safe_haven_demand", "junk_bond_demand",
+            ],
+            "label": "F&G index/component",
+            "help": "Sub-indices only available with --fg-source cnn",
+        },
+        {
+            "name": "start_in_market", "type": "boolean", "default": False,
+            "label": "Start in market (deploy on day 0)",
+        },
+    ]
 
     def orders(
         self,

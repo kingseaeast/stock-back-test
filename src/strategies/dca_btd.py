@@ -32,6 +32,33 @@ class DCABTD:
         "the price must recover above the threshold before the next dip-buy can arm."
     )
     data_requirements = frozenset({"prices"})
+    param_schema: list[dict] = [
+        {
+            "name": "cadence", "type": "select", "default": "monthly",
+            "options": ["weekly", "biweekly", "monthly"],
+            "label": "Contribution cadence",
+        },
+        {
+            "name": "dip_reserve_pct", "type": "number", "default": 0.20,
+            "min": 0.0, "max": 0.95, "step": 0.05,
+            "label": "Dip reserve (fraction of budget)",
+        },
+        {
+            "name": "dip_threshold_pct", "type": "number", "default": 0.10,
+            "min": 0.01, "max": 0.50, "step": 0.01,
+            "label": "Dip threshold (fraction below recent high)",
+        },
+        {
+            "name": "dip_lookback", "type": "number", "default": 90,
+            "min": 5, "max": 365, "step": 1,
+            "label": "Dip lookback (trading days)",
+        },
+        {
+            "name": "dip_buys", "type": "number", "default": 4,
+            "min": 1, "max": 20, "step": 1,
+            "label": "Number of dip buys",
+        },
+    ]
 
     def orders(
         self,

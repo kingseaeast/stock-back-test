@@ -48,6 +48,27 @@ class RSI:
         "start_in_cash=true to wait for the first oversold signal."
     )
     data_requirements = frozenset({"prices"})
+    param_schema: list[dict] = [
+        {
+            "name": "period", "type": "number", "default": 14,
+            "min": 2, "max": 60, "step": 1,
+            "label": "RSI period (days)",
+        },
+        {
+            "name": "oversold", "type": "number", "default": 30,
+            "min": 5, "max": 49, "step": 1,
+            "label": "Oversold threshold",
+        },
+        {
+            "name": "overbought", "type": "number", "default": 70,
+            "min": 51, "max": 95, "step": 1,
+            "label": "Overbought threshold",
+        },
+        {
+            "name": "start_in_cash", "type": "boolean", "default": False,
+            "label": "Start in cash (wait for first oversold signal)",
+        },
+    ]
 
     def orders(
         self,

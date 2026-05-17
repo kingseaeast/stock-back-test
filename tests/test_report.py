@@ -34,18 +34,13 @@ class TestTradeLogHtml:
             _trade("2020-05-01", "sell", 15.0, 120.0, 1800.0, 0.9),
         ]
         html = _trade_log_html(trades, "rsi")
-        # Header row
-        assert "Trade log" in html
         assert "3 trades — 2 buys, 1 sells" in html
-        # Each date appears
         assert "2020-01-02" in html
         assert "2020-02-03" in html
         assert "2020-05-01" in html
-        # Side classes for color
         assert "side buy" in html
         assert "side sell" in html
-        # Running shares column should reach 15 after both buys, then 0 after the sell.
-        # Render shares as "15.0000" (4dp) so we can search for it.
+        # Running shares column reaches 15 after both buys, then 0 after the sell.
         assert "15.0000" in html
         assert "0.0000" in html
 

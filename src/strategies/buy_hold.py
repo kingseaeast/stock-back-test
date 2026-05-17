@@ -17,6 +17,7 @@ class BuyHold:
         "in a strong-up market."
     )
     data_requirements = frozenset({"prices"})
+    param_schema: list[dict] = []  # no strategy-specific params
 
     def orders(
         self,

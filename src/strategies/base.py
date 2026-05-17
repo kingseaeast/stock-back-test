@@ -37,6 +37,14 @@ class Strategy(Protocol):
     name: ClassVar[str]
     description: ClassVar[str]                    # plain-English summary; rendered in reports
     data_requirements: ClassVar[frozenset[str]]  # e.g. frozenset({"prices"})
+    param_schema: ClassVar[list[dict]]           # for HTML controls + browser JS engine
+    # param_schema entry shape:
+    #   {"name": "buy_below", "type": "number", "min": 0, "max": 100, "step": 1,
+    #    "default": 25, "label": "Buy when below", "help": "Optional tooltip text"}
+    #   {"name": "cadence", "type": "select", "options": ["monthly", "weekly"],
+    #    "default": "monthly", "label": "Cadence"}
+    #   {"name": "start_in_cash", "type": "boolean", "default": False,
+    #    "label": "Start in cash"}
 
     def orders(
         self,

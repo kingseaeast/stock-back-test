@@ -33,6 +33,34 @@ class TestRegistry:
                 f"{name!r} needs a description ≥40 chars (got {desc!r})"
             )
 
+    def test_every_strategy_has_a_valid_param_schema(self):
+        """Every strategy must declare param_schema (may be empty list).
+        Each entry must have name, type, default, label and type-appropriate fields."""
+        valid_types = {"number", "select", "boolean"}
+        for name, cls in REGISTRY.items():
+            schema = getattr(cls, "param_schema", None)
+            assert isinstance(schema, list), f"{name}.param_schema must be a list"
+            for entry in schema:
+                for required in ("name", "type", "default", "label"):
+                    assert required in entry, (
+                        f"{name}.param_schema entry missing {required!r}: {entry}"
+                    )
+                assert entry["type"] in valid_types, (
+                    f"{name}.param_schema entry has unknown type {entry['type']!r}"
+                )
+                if entry["type"] == "number":
+                    for required in ("min", "max", "step"):
+                        assert required in entry, (
+                            f"{name}.param_schema number entry missing {required!r}: {entry}"
+                        )
+                if entry["type"] == "select":
+                    assert "options" in entry and entry["options"], (
+                        f"{name}.param_schema select entry needs non-empty options"
+                    )
+                    assert entry["default"] in entry["options"], (
+                        f"{name}.param_schema default {entry['default']!r} not in options"
+                    )
+
 
 class TestBuyHold:
     def test_single_order_on_first_day(self, linear_prices):

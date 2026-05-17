@@ -63,8 +63,10 @@ All v1 strategies are "set and forget" — appropriate for a long-term investor 
 - A single `docs/runs.json` file lists every run with metadata (timestamp, strategy, ticker, period, key metrics, HTML path).
 - Engine appends a new entry on each run; never rewrites old ones.
 
-### 6.5 Static Dashboard (GitHub Pages)
+### 6.5 Dashboard + Interactive Reports (GitHub Pages)
 - Lives in `/docs`. GH Pages serves `/docs` from `main`.
+- The dashboard at `/docs/index.html` is a static index of runs (sortable, filterable).
+- Individual reports under `/docs/runs/*.html` are **interactive**: each one embeds the data it was generated against and re-runs the backtest in the browser via a small JS engine (`/docs/engine.js`) whenever the user adjusts controls (window, budget, costs, strategy params). No server.
 - Single-page static site (HTML + vanilla JS or a tiny framework — no build step preferred).
 - Loads `runs.json`, renders a sortable/filterable table: timestamp, strategy, ticker, period, CAGR, Sharpe, max drawdown, link to report.
 - Filters: strategy name, ticker, date range.

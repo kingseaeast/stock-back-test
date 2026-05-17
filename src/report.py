@@ -1,11 +1,19 @@
-"""Render a backtest Result to a self-contained HTML file."""
+"""Render a backtest Result to an interactive, self-contained HTML report.
+
+The page embeds the strategy's data (prices + optional F&G series) plus the
+strategy's param schema, then loads docs/engine.js + docs/report.js. On every
+control change the browser re-runs the backtest in JS and updates the chart
+and tables in place — no server round-trip.
+
+A static initial chart is also written so the page is meaningful before JS
+runs (and search engines / archives have something to index).
+"""
 
 from __future__ import annotations
 
+import html as html_lib
 import json
 from pathlib import Path
-
-import html as html_lib
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -15,8 +23,13 @@ from plotly.subplots import make_subplots
 from . import strategies
 from .engine import Result, StrategyRun, Trade
 
-PLOTLY_JS_FILENAME = "plotly.min.js"  # written once into docs/ and referenced relatively
+PLOTLY_JS_FILENAME = "plotly.min.js"
+ENGINE_JS_FILENAME = "engine.js"
+REPORT_JS_FILENAME = "report.js"
 PALETTE = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
+
+
+# ----------------------------------------------------------- formatting ---
 
 
 def _format_pct(x: float) -> str:
@@ -42,174 +55,149 @@ def _stats_row(label: str, run: StrategyRun, *, is_strategy: bool) -> str:
     )
 
 
-def _trade_log_html(trades: list[Trade], strategy_name: str) -> str:
-    """Render the strategy's trade log as a scrollable table."""
-    if not trades:
-        return (
-            "<section><h2>Trade log</h2>"
-            "<p class='muted'>No trades executed.</p></section>"
-        )
+# ------------------------------------------------------------- trade log ---
 
+
+def _trade_log_html(trades: list[Trade], strategy_name: str) -> str:
+    if not trades:
+        return "<p class='muted'>No trades executed.</p>"
     rows = []
-    running_shares = 0.0
-    running_cash_in = 0.0
+    running = 0.0
     for i, t in enumerate(trades, start=1):
-        if t.side == "buy":
-            running_shares += t.shares
-            running_cash_in += t.notional + t.commission
-            side_class = "buy"
-        else:
-            running_shares -= t.shares
-            running_cash_in -= t.notional - t.commission
-            side_class = "sell"
+        running += t.shares if t.side == "buy" else -t.shares
         rows.append(
             f"<tr>"
             f"<td class='num'>{i}</td>"
             f"<td>{t.date.strftime('%Y-%m-%d')}</td>"
-            f"<td class='side {side_class}'>{t.side}</td>"
+            f"<td class='side {t.side}'>{t.side}</td>"
             f"<td class='num'>{t.shares:,.4f}</td>"
             f"<td class='num'>{_format_money(t.price)}</td>"
             f"<td class='num'>{_format_money(t.notional)}</td>"
             f"<td class='num'>{_format_money(t.commission)}</td>"
-            f"<td class='num'>{running_shares:,.4f}</td>"
+            f"<td class='num'>{running:,.4f}</td>"
             f"</tr>"
         )
-
     n_buys = sum(1 for t in trades if t.side == "buy")
     n_sells = sum(1 for t in trades if t.side == "sell")
     return (
-        f"<section><h2>Trade log <span class='muted'>"
-        f"({len(trades)} trades — {n_buys} buys, {n_sells} sells)</span></h2>"
+        f"<p class='muted'>{len(trades)} trades — {n_buys} buys, {n_sells} sells</p>"
         "<div class='trade-log-wrap'><table class='trade-log'>"
         "<thead><tr>"
         "<th class='num'>#</th><th>Date</th><th>Side</th>"
         "<th class='num'>Shares</th><th class='num'>Exec price</th>"
         "<th class='num'>Notional</th><th class='num'>Commission</th>"
         "<th class='num'>Shares held</th>"
-        "</tr></thead><tbody>"
-        + "".join(rows)
-        + "</tbody></table></div></section>"
+        "</tr></thead><tbody>" + "".join(rows) + "</tbody></table></div>"
     )
+
+
+# -------------------------------------------------------- helpers (data) ---
 
 
 def _drawdown(equity: pd.Series) -> pd.Series:
     peak = equity.cummax()
-    # Where peak is 0 (pre-deployment days), drawdown is undefined -> fill with 0.
     safe_peak = peak.where(peak > 0)
     return ((equity - peak) / safe_peak).fillna(0.0).astype(float)
 
 
-def render(result: Result, output_path: Path) -> Path:
+def _prices_to_records(prices: pd.DataFrame) -> list[dict]:
+    return [
+        {"date": idx.strftime("%Y-%m-%d"), "adj_close": float(row.adj_close)}
+        for idx, row in prices.iterrows()
+    ]
+
+
+def _fg_to_records(fg: pd.DataFrame) -> list[dict]:
+    records = []
+    for idx, row in fg.iterrows():
+        entry = {"date": idx.strftime("%Y-%m-%d")}
+        for col in fg.columns:
+            val = row[col]
+            entry[col] = None if pd.isna(val) else float(val)
+        records.append(entry)
+    return records
+
+
+# --------------------------------------------------- static initial chart ---
+
+
+def _build_static_figure(result: Result, prices: pd.DataFrame,
+                          fg_series: pd.Series | None, fg_col: str,
+                          cfg) -> str:
     runs = [result.strategy, *result.benchmarks]
-    cfg = result.config
-
-    # Pull price + (optionally) F&G data the strategy used. Re-load from cache to
-    # avoid threading them through `Result` — cheap and avoids API churn.
-    from .data.prices import load_prices
-    prices = load_prices(cfg.ticker, cfg.start, cfg.end)
-    show_fg = cfg.strategy == "fear_greed"
-    fg_series: pd.Series | None = None
-    fg_index_col = "fear_greed"
-    if show_fg:
-        from .data.fear_greed import load_fear_greed
-        fg_index_col = cfg.params.get("index_type", "fear_greed")
-        fg_source = cfg.data_options.get("fg_source", "cnn")
-        fg_df = load_fear_greed(cfg.start, cfg.end, source=fg_source)
-        fg_series = fg_df[fg_index_col].reindex(prices.index.union(fg_df.index)).ffill().reindex(prices.index)
-
-    # Subplot layout
+    show_fg = fg_series is not None
     rows = 5 if show_fg else 4
     row_heights = [0.30, 0.15, 0.20, 0.10, 0.25] if show_fg else [0.32, 0.18, 0.25, 0.25]
     titles = [
-        "Equity curves (same total budget)",
-        "Drawdown",
-        f"{cfg.ticker} price + strategy trades",
-        "Cumulative cash deployed",
+        "Equity curves (same total budget)", "Drawdown",
+        f"{cfg.ticker} price + strategy trades", "Cumulative cash deployed",
     ]
     if show_fg:
-        titles.append(f"CNN {fg_index_col.replace('_', ' ').title()}")
+        titles.append(f"CNN {fg_col.replace('_', ' ').title()}")
     fig = make_subplots(
         rows=rows, cols=1, shared_xaxes=True,
-        row_heights=row_heights, vertical_spacing=0.06,
-        subplot_titles=titles,
+        row_heights=row_heights, vertical_spacing=0.06, subplot_titles=titles,
     )
 
-    # Row 1: equity curves
     for i, run in enumerate(runs):
+        color = PALETTE[i % len(PALETTE)]
         fig.add_trace(
-            go.Scatter(
-                x=run.equity.index, y=run.equity.values, name=run.name,
-                line=dict(color=PALETTE[i % len(PALETTE)]),
-            ),
+            go.Scatter(x=run.equity.index, y=run.equity.values, name=run.name,
+                       line=dict(color=color)),
             row=1, col=1,
         )
     fig.update_yaxes(title_text="Value ($)", row=1, col=1)
 
-    # Row 2: drawdown
     for i, run in enumerate(runs):
         dd = _drawdown(run.equity)
         fig.add_trace(
-            go.Scatter(
-                x=dd.index, y=(dd * 100).values, name=f"{run.name} dd",
-                line=dict(color=PALETTE[i % len(PALETTE)]), showlegend=False,
-            ),
+            go.Scatter(x=dd.index, y=(dd * 100).values, name=f"{run.name} dd",
+                       line=dict(color=PALETTE[i % len(PALETTE)]), showlegend=False),
             row=2, col=1,
         )
     fig.update_yaxes(title_text="Drawdown (%)", row=2, col=1)
 
-    # Row 3: price with strategy's trade markers
     fig.add_trace(
-        go.Scatter(
-            x=prices.index, y=prices["adj_close"].astype(float),
-            name=f"{cfg.ticker} adj close", line=dict(color="#555"), showlegend=False,
-        ),
+        go.Scatter(x=prices.index, y=prices["adj_close"].astype(float),
+                   name=f"{cfg.ticker} adj close", line=dict(color="#555"), showlegend=False),
         row=3, col=1,
     )
-    buy_trades = [t for t in result.strategy.trades if t.side == "buy"]
-    sell_trades = [t for t in result.strategy.trades if t.side == "sell"]
-    if buy_trades:
+    buys = [t for t in result.strategy.trades if t.side == "buy"]
+    sells = [t for t in result.strategy.trades if t.side == "sell"]
+    if buys:
         fig.add_trace(
-            go.Scatter(
-                x=[t.date for t in buy_trades],
-                y=[float(prices["adj_close"].loc[t.date]) for t in buy_trades],
-                mode="markers", name="buy",
-                marker=dict(symbol="triangle-up", size=10, color="#2ca02c"),
-            ),
+            go.Scatter(x=[t.date for t in buys],
+                       y=[float(prices["adj_close"].loc[t.date]) for t in buys],
+                       mode="markers", name="buy",
+                       marker=dict(symbol="triangle-up", size=10, color="#2ca02c")),
             row=3, col=1,
         )
-    if sell_trades:
+    if sells:
         fig.add_trace(
-            go.Scatter(
-                x=[t.date for t in sell_trades],
-                y=[float(prices["adj_close"].loc[t.date]) for t in sell_trades],
-                mode="markers", name="sell",
-                marker=dict(symbol="triangle-down", size=10, color="#d62728"),
-            ),
+            go.Scatter(x=[t.date for t in sells],
+                       y=[float(prices["adj_close"].loc[t.date]) for t in sells],
+                       mode="markers", name="sell",
+                       marker=dict(symbol="triangle-down", size=10, color="#d62728")),
             row=3, col=1,
         )
     fig.update_yaxes(title_text="Price ($)", row=3, col=1)
 
-    # Row 4: cumulative cash deployed
     for i, run in enumerate(runs):
         fig.add_trace(
-            go.Scatter(
-                x=run.cash_deployed.index, y=run.cash_deployed.values,
-                name=f"{run.name} deployed", line=dict(color=PALETTE[i % len(PALETTE)], dash="dot"),
-                showlegend=False,
-            ),
+            go.Scatter(x=run.cash_deployed.index, y=run.cash_deployed.values,
+                       name=f"{run.name} deployed",
+                       line=dict(color=PALETTE[i % len(PALETTE)], dash="dot"),
+                       showlegend=False),
             row=4, col=1,
         )
     fig.update_yaxes(title_text="Deployed ($)", row=4, col=1)
 
-    # Row 5: F&G index with threshold lines
     if show_fg and fg_series is not None:
         buy_below = float(cfg.params.get("buy_below", 25))
         exit_above = float(cfg.params.get("exit_above", 75))
         fig.add_trace(
-            go.Scatter(
-                x=fg_series.index, y=fg_series.values, name=fg_index_col,
-                line=dict(color="#8e44ad"), showlegend=False,
-            ),
+            go.Scatter(x=fg_series.index, y=fg_series.values, name=fg_col,
+                       line=dict(color="#8e44ad"), showlegend=False),
             row=5, col=1,
         )
         fig.add_hline(y=buy_below, line=dict(color="#2ca02c", dash="dash"), row=5, col=1,
@@ -223,46 +211,92 @@ def render(result: Result, output_path: Path) -> Path:
         legend=dict(orientation="h", y=-0.10),
         margin=dict(l=60, r=30, t=60, b=60),
     )
+    return fig.to_html(full_html=False, include_plotlyjs=False, div_id="chart")
 
+
+# --------------------------------------------------------- main renderer ---
+
+
+def render(result: Result, output_path: Path) -> Path:
+    cfg = result.config
+
+    from .data.prices import load_prices
+    prices = load_prices(cfg.ticker, cfg.start, cfg.end)
+    prices_records = _prices_to_records(prices)
+
+    show_fg = cfg.strategy == "fear_greed"
+    fg_records: list[dict] = []
+    fg_series: pd.Series | None = None
+    fg_col = "fear_greed"
+    if show_fg:
+        from .data.fear_greed import load_fear_greed
+        fg_col = cfg.params.get("index_type", "fear_greed")
+        fg_source = cfg.data_options.get("fg_source", "cnn")
+        fg_df = load_fear_greed(cfg.start, cfg.end, source=fg_source)
+        fg_records = _fg_to_records(fg_df)
+        fg_series = fg_df[fg_col].reindex(
+            prices.index.union(fg_df.index)
+        ).ffill().reindex(prices.index)
+
+    chart_html = _build_static_figure(result, prices, fg_series, fg_col, cfg)
     _ensure_plotly_js(output_path)
-    chart_html = fig.to_html(full_html=False, include_plotlyjs=False, div_id="chart")
 
-    params_json = json.dumps(cfg.params or {})
     strategy_cls = strategies.get(cfg.strategy)
     description = html_lib.escape(getattr(strategy_cls, "description", "") or "")
+    params_schema = getattr(strategy_cls, "param_schema", [])
+
+    state = {
+        "strategy": cfg.strategy,
+        "ticker": cfg.ticker,
+        "defaults": {
+            "start": cfg.start.isoformat(),
+            "end": cfg.end.isoformat(),
+            "total_budget": cfg.total_budget,
+            "commission_bps": cfg.commission_bps,
+            "slippage_bps": cfg.slippage_bps,
+            "params": cfg.params,
+        },
+        "params_schema": params_schema,
+        "data": {"prices": prices_records},
+    }
+    if show_fg:
+        state["data"]["fear_greed"] = fg_records
+
+    state_json = json.dumps(state).replace("</", "<\\/")  # keep </script> safe
+
     data_options_html = ""
     if cfg.data_options:
         data_options_html = (
             f'<p class="meta"><strong>Data options:</strong> '
             f'<code>{html_lib.escape(json.dumps(cfg.data_options))}</code></p>'
         )
+
     header_html = f"""
     <header>
       <h1>{cfg.strategy} on {cfg.ticker}</h1>
       <p class="description">{description}</p>
-      <p class="meta">
-        <strong>Period:</strong> {cfg.start.isoformat()} → {cfg.end.isoformat()} &nbsp;
-        <strong>Budget:</strong> {_format_money(cfg.total_budget)} &nbsp;
-        <strong>Commission:</strong> {cfg.commission_bps} bps &nbsp;
-        <strong>Slippage:</strong> {cfg.slippage_bps} bps
+      <p id="subtitle" class="meta">
+        Window {cfg.start.isoformat()} → {cfg.end.isoformat()} · Budget {_format_money(cfg.total_budget)}
       </p>
-      <p class="meta"><strong>Params:</strong> <code>{params_json}</code></p>
       {data_options_html}
-      <p class="note">Idle cash earns 0% in this model. Orders execute at next trading day's adjusted close.</p>
+      <p class="note">Idle cash earns 0%. Orders execute at next trading day's adjusted close. Costs as set in controls.</p>
     </header>
     """
 
-    stats_rows = [_stats_row(result.strategy.name, result.strategy, is_strategy=True)]
-    stats_rows += [_stats_row(b.name, b, is_strategy=False) for b in result.benchmarks]
-    stats_html = (
-        "<section><h2>Summary</h2>"
+    initial_stats_rows = [_stats_row(result.strategy.name, result.strategy, is_strategy=True)]
+    initial_stats_rows += [
+        _stats_row(b.name, b, is_strategy=False) for b in result.benchmarks
+    ]
+    initial_stats_html = (
         "<table class='stats'>"
         "<thead><tr><th></th><th>Final value</th><th>Cash deployed</th>"
         "<th>Total return</th><th>CAGR (approx)</th><th>Max drawdown</th>"
         "<th>Buys</th><th>Sells</th></tr></thead><tbody>"
-        + "".join(stats_rows)
-        + "</tbody></table></section>"
+        + "".join(initial_stats_rows)
+        + "</tbody></table>"
     )
+
+    initial_trade_log = _trade_log_html(result.strategy.trades, result.strategy.name)
 
     css = """
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 1100px; margin: 24px auto; padding: 0 16px; color: #222; }
@@ -288,6 +322,22 @@ def render(result: Result, output_path: Path) -> Path:
     table.trade-log .side.buy { color: #2ca02c; }
     table.trade-log .side.sell { color: #d62728; }
     table.trade-log tbody tr:hover { background: #fafafa; }
+    /* Interactive controls */
+    .controls-section { background: #fcfcfd; border: 1px solid #e0e4e8; border-radius: 6px; padding: 14px 16px; }
+    .controls-section h2 { margin-top: 0; }
+    .control-group { border: 1px solid #e0e4e8; border-radius: 4px; padding: 8px 12px 12px; margin: 8px 0; }
+    .control-group legend { font-size: 12px; color: #555; padding: 0 6px; }
+    #controls { display: block; }
+    .control { display: inline-flex; flex-direction: column; min-width: 180px; margin: 6px 12px 6px 0; vertical-align: top; }
+    .control-label { font-size: 12px; color: #555; margin-bottom: 2px; }
+    .control input, .control select {
+      padding: 5px 8px; border: 1px solid #d0d7de; border-radius: 4px; font-size: 14px; background: white;
+    }
+    .control input[type=checkbox] { width: auto; align-self: flex-start; }
+    .control-help { font-size: 11px; color: #888; margin-top: 2px; }
+    #reset-btn { margin-top: 8px; padding: 6px 12px; border: 1px solid #d0d7de; border-radius: 4px; background: white; cursor: pointer; }
+    #reset-btn:hover { background: #f5f5f5; }
+    #error { color: #c0392b; font-size: 13px; margin: 8px 0; min-height: 1.2em; }
     """
 
     full = f"""<!DOCTYPE html>
@@ -301,9 +351,29 @@ def render(result: Result, output_path: Path) -> Path:
 </head>
 <body>
   {header_html}
-  {stats_html}
+
+  <section class="controls-section">
+    <h2>Controls <span class="muted">(recomputes in your browser)</span></h2>
+    <div id="controls"></div>
+    <button type="button" id="reset-btn">Reset to defaults</button>
+    <div id="error"></div>
+  </section>
+
+  <section><h2>Summary</h2><div id="summary">{initial_stats_html}</div></section>
+
   <section><h2>Charts</h2>{chart_html}</section>
-  {_trade_log_html(result.strategy.trades, result.strategy.name)}
+
+  <section><h2>Trade log</h2><div id="trade-log">{initial_trade_log}</div></section>
+
+  <script id="report-data" type="application/json">{state_json}</script>
+  <script src="../{ENGINE_JS_FILENAME}"></script>
+  <script src="../{REPORT_JS_FILENAME}"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {{
+      var state = JSON.parse(document.getElementById("report-data").textContent);
+      window.Report.init(state);
+    }});
+  </script>
 </body>
 </html>
 """
@@ -313,7 +383,6 @@ def render(result: Result, output_path: Path) -> Path:
 
 
 def _ensure_plotly_js(report_path: Path) -> None:
-    """Write Plotly's bundled minified JS into docs/ once so every report can share it."""
     docs_dir = report_path.parent.parent
     js_path = docs_dir / PLOTLY_JS_FILENAME
     if js_path.exists():

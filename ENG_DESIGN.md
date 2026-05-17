@@ -150,15 +150,19 @@ Final value, not just CAGR, is the headline number because DCA strategies don't 
 - Computes CAGR, total return, annualized Sharpe (rf=0), Sortino, max drawdown, win rate, number of trades, market exposure (%).
 - Pure numerical; thoroughly unit-tested against hand-computed values.
 
-### `report.py`
-- Takes a `Result`, produces a single self-contained HTML file using Plotly (`include_plotlyjs="cdn"` for size, or `"inline"` for true offline durability — default **inline**).
-- Sections, in order:
-  1. Header — strategy name, ticker, period, params (JSON pretty-printed).
-  2. Equity curve — strategy vs benchmark, log-scale toggle.
-  3. Drawdown — underwater chart.
-  4. Price + trade markers — candlestick or line with buy/sell arrows.
-  5. Stats table — side-by-side strategy vs benchmark.
-  6. Trade log — paginated HTML table.
+### `report.py` + `docs/engine.js` + `docs/report.js` (interactive reports)
+- Reports are **interactive in the browser**. Each report embeds the price (+ optional F&G) series as JSON, plus the strategy's `param_schema`, and loads `engine.js` + `report.js`. On any control change the backtest re-runs in JS — no server round-trip, still served by GH Pages.
+- `report.py` writes:
+  1. Header (strategy / ticker / window / budget / costs / description).
+  2. Controls panel — generated from the common controls (start, end, budget, commission_bps, slippage_bps) plus the strategy's `param_schema` (each strategy class declares its own schema).
+  3. Summary table (initial values from Python; replaced by JS recompute on load).
+  4. Charts — static Plotly initial render so search engines / no-JS browsers see something meaningful; replaced in place by `Plotly.react()` on every recompute.
+  5. Trade log table.
+  6. Embedded JSON in a `<script type="application/json" id="report-data">` block.
+- `docs/engine.js` is a ~400-line vanilla-JS port of `src/engine.py` + all five strategies + Wilder RSI + metrics. Same algorithm and same date-execution semantics (orders dated D execute at D+1's adjusted close; orders on the final day are dropped; idle cash earns 0%; commission and slippage in bps).
+- `docs/report.js` owns: control rendering from schema, value snapshot, recompute orchestration, Plotly figure construction, stats/trade-log re-rendering, error display, reset-to-defaults.
+- **Date sliders narrow within the originally-generated window** (which determines what data is embedded). To widen, regenerate locally and push.
+- **Parity is checked manually** by running each strategy's `final_value` through both engines on the same config (Python via the CLI, JS via Node with a `window = {}` shim around `engine.js`). All five strategies currently match to the cent on identical inputs. Drift risk is non-zero — if a Python strategy changes, mirror it in JS the same commit. The schema test (`test_every_strategy_has_a_valid_param_schema`) at least prevents missing schemas; numerical parity is verified outside CI.
 
 ### `manifest.py`
 - `append(result: Result, html_path: str)` opens `docs/runs.json`, appends an entry, writes back atomically (write-temp-then-rename).

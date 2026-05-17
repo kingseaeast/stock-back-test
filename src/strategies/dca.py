@@ -26,6 +26,13 @@ class DCA:
         "and outperform when the early window has a big drawdown."
     )
     data_requirements = frozenset({"prices"})
+    param_schema: list[dict] = [
+        {
+            "name": "cadence", "type": "select", "default": "monthly",
+            "options": ["weekly", "biweekly", "monthly"],
+            "label": "Contribution cadence",
+        },
+    ]
 
     def orders(
         self,
