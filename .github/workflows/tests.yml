@@ -1,0 +1,39 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same ref so a fast push doesn't pile up CI jobs.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python via uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Set up Node (for the JS engine parity check)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Python dependencies
+        run: uv sync --frozen --no-install-project
+
+      # Unit tests + the `integration` parity check between src/engine.py and
+      # docs/engine.js. The parity check is hermetic — it reads each report's
+      # embedded JSON and feeds the same data to both engines, so no network
+      # or local Parquet cache is required.
+      - name: Run full test suite (unit + integration)
+        run: uv run pytest -m "" -v

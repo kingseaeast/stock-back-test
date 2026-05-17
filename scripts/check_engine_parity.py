@@ -98,10 +98,15 @@ def extract_state(html_path: Path) -> dict:
 
 
 def python_metrics(state: dict) -> dict[str, dict[str, float]]:
-    """Re-run via the Python engine using the report's stored config.
-    Data is loaded the normal way (Parquet cache); the report's embedded data
-    was generated from the same cache, so this is a meaningful comparison.
+    """Re-run via the Python engine using the report's *embedded* data.
+
+    We feed engine.run() the same JSON arrays the JS engine consumes (via the
+    `prices` / `extras` kwargs), so the test compares "same input, both engines"
+    — no network, no Parquet cache dependency. CI can run this without any
+    state beyond the repo itself.
     """
+    import pandas as pd
+
     defaults = state["defaults"]
     config = RunConfig(
         strategy=state["strategy"],
@@ -112,38 +117,29 @@ def python_metrics(state: dict) -> dict[str, dict[str, float]]:
         commission_bps=defaults["commission_bps"],
         slippage_bps=defaults["slippage_bps"],
         params=defaults.get("params") or {},
-        data_options={"fg_source": "cnn"} if state["strategy"] == "fear_greed" else {},
     )
-    # Honor data_options that the report was generated with, if persisted.
-    embedded_opts = state.get("defaults", {}).get("data_options")
-    if embedded_opts:
-        config = _with_data_options(config, embedded_opts)
-    else:
-        # The defaults dict didn't carry data_options historically; sniff the strategy.
-        # If the strategy is fear_greed and the embedded fear_greed data is short (<400
-        # rows over a window > 18 months), it's almost certainly whit3rabbit. Default
-        # to cnn otherwise. Not bulletproof but enough for parity checks.
-        if state["strategy"] == "fear_greed":
-            fg = state["data"].get("fear_greed", [])
-            if fg and len(fg) > 1500:
-                config = _with_data_options(config, {"fg_source": "whit3rabbit"})
 
-    result = py_run(config)
+    prices_df = _records_to_frame(state["data"]["prices"], "adj_close")
+    extras: dict[str, pd.DataFrame] = {}
+    fg_records = state["data"].get("fear_greed")
+    if fg_records:
+        # Carry every column in the embedded F&G rows (headline + any sub-indices).
+        fg_columns = [k for k in fg_records[0].keys() if k != "date"]
+        extras["fear_greed"] = _records_to_frame(fg_records, *fg_columns)
+
+    result = py_run(config, prices=prices_df, extras=extras or None)
     out = {result.strategy.name: result.strategy.metrics}
     for b in result.benchmarks:
         out[b.name] = b.metrics
     return out
 
 
-def _with_data_options(config: RunConfig, opts: dict) -> RunConfig:
-    """RunConfig is frozen — rebuild with new data_options."""
-    return RunConfig(
-        strategy=config.strategy, ticker=config.ticker,
-        start=config.start, end=config.end,
-        params=config.params, total_budget=config.total_budget,
-        commission_bps=config.commission_bps, slippage_bps=config.slippage_bps,
-        data_options=opts,
-    )
+def _records_to_frame(records: list[dict], *columns: str):
+    """Build a DateTimeIndex-ed DataFrame from list-of-dicts records."""
+    import pandas as pd
+    idx = pd.DatetimeIndex([r["date"] for r in records]).normalize()
+    data = {c: [r[c] for r in records] for c in columns}
+    return pd.DataFrame(data, index=idx)
 
 
 def js_metrics(state: dict) -> dict[str, dict[str, float]]:
