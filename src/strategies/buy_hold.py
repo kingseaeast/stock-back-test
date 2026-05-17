@@ -11,6 +11,11 @@ from .base import Action, Order
 
 class BuyHold:
     name = "buy_hold"
+    description = (
+        "Invest the entire budget on day one and never trade again. The baseline "
+        "every other strategy is measured against — historically very hard to beat "
+        "in a strong-up market."
+    )
     data_requirements = frozenset({"prices"})
 
     def orders(

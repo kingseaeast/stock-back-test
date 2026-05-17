@@ -5,11 +5,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import html as html_lib
+
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.offline as pio
 from plotly.subplots import make_subplots
 
+from . import strategies
 from .engine import Result, StrategyRun
 
 PLOTLY_JS_FILENAME = "plotly.min.js"  # written once into docs/ and referenced relatively
@@ -174,9 +177,12 @@ def render(result: Result, output_path: Path) -> Path:
     chart_html = fig.to_html(full_html=False, include_plotlyjs=False, div_id="chart")
 
     params_json = json.dumps(cfg.params or {})
+    strategy_cls = strategies.get(cfg.strategy)
+    description = html_lib.escape(getattr(strategy_cls, "description", "") or "")
     header_html = f"""
     <header>
       <h1>{cfg.strategy} on {cfg.ticker}</h1>
+      <p class="description">{description}</p>
       <p class="meta">
         <strong>Period:</strong> {cfg.start.isoformat()} → {cfg.end.isoformat()} &nbsp;
         <strong>Budget:</strong> {_format_money(cfg.total_budget)} &nbsp;
@@ -204,6 +210,7 @@ def render(result: Result, output_path: Path) -> Path:
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 1100px; margin: 24px auto; padding: 0 16px; color: #222; }
     header h1 { margin-bottom: 4px; text-transform: capitalize; }
     .meta { color: #555; margin: 4px 0; }
+    .description { color: #444; font-size: 0.95em; margin: 6px 0 12px; line-height: 1.55; max-width: 850px; }
     .note { color: #888; font-size: 0.9em; margin-top: 12px; }
     table.stats { border-collapse: collapse; width: 100%; margin-top: 12px; }
     table.stats th, table.stats td { padding: 8px 12px; border-bottom: 1px solid #eee; text-align: right; }

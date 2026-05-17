@@ -1,19 +1,20 @@
 [
   {
-    "run_id": "20260517-034925_buy_hold_SPY",
-    "timestamp": "2026-05-17T03:49:25+00:00",
+    "run_id": "20260517-040323_buy_hold_SPY",
+    "timestamp": "2026-05-17T04:03:23+00:00",
     "strategy": "buy_hold",
+    "strategy_description": "Invest the entire budget on day one and never trade again. The baseline every other strategy is measured against \u2014 historically very hard to beat in a strong-up market.",
     "ticker": "SPY",
     "start": "2015-01-01",
     "end": "2024-12-31",
     "total_budget": 12000.0,
     "params": {},
     "metrics": {
-      "final_value": 41456.82340700847,
+      "final_value": 41456.81583357568,
       "cash_deployed": 12000.0,
-      "total_return": 2.4547352839173726,
-      "cagr": 0.13204475826981388,
-      "max_drawdown": -0.33717258279330087,
+      "total_return": 2.4547346527979736,
+      "cagr": 0.13204473758084823,
+      "max_drawdown": -0.33717271363429996,
       "n_buys": 1.0,
       "n_sells": 0.0
     },
@@ -21,22 +22,23 @@
       {
         "name": "dca_monthly",
         "metrics": {
-          "final_value": 25560.276113834352,
+          "final_value": 25560.276196263127,
           "cash_deployed": 11999.999999999985,
-          "total_return": 1.1300230094861985,
-          "cagr": 0.07857890251179156,
-          "max_drawdown": -0.328874604427279,
+          "total_return": 1.130023016355263,
+          "cagr": 0.07857890285976299,
+          "max_drawdown": -0.328874736008292,
           "n_buys": 119.0,
           "n_sells": 0.0
         }
       }
     ],
-    "html": "runs/20260517-034925_buy_hold_SPY.html"
+    "html": "runs/20260517-040323_buy_hold_SPY.html"
   },
   {
-    "run_id": "20260517-034926_dca_SPY",
-    "timestamp": "2026-05-17T03:49:26+00:00",
+    "run_id": "20260517-040324_dca_SPY",
+    "timestamp": "2026-05-17T04:03:24+00:00",
     "strategy": "dca",
+    "strategy_description": "Dollar-cost averaging: split the budget into equal contributions and invest one on each cadence date (monthly by default). Removes timing risk and matches how most people actually invest from a paycheck. Tends to lag a lump-sum buy-hold when the market trends up steadily, and outperform when the early window has a big drawdown.",
     "ticker": "SPY",
     "start": "2015-01-01",
     "end": "2024-12-31",
@@ -45,11 +47,11 @@
       "cadence": "monthly"
     },
     "metrics": {
-      "final_value": 25560.275670610572,
+      "final_value": 25560.27587988436,
       "cash_deployed": 11999.999999999985,
-      "total_return": 1.1300229725508837,
-      "cagr": 0.07857890064073114,
-      "max_drawdown": -0.32887472041536814,
+      "total_return": 1.130022989990366,
+      "cagr": 0.07857890152417624,
+      "max_drawdown": -0.32887473770466863,
       "n_buys": 119.0,
       "n_sells": 0.0
     },
@@ -57,22 +59,23 @@
       {
         "name": "buy_hold",
         "metrics": {
-          "final_value": 41456.80826014567,
+          "final_value": 41456.82340700847,
           "cash_deployed": 12000.0,
-          "total_return": 2.4547340216788056,
-          "cagr": 0.13204471689188657,
-          "max_drawdown": -0.3371726975633843,
+          "total_return": 2.4547352839173726,
+          "cagr": 0.13204475826981388,
+          "max_drawdown": -0.3371727136342999,
           "n_buys": 1.0,
           "n_sells": 0.0
         }
       }
     ],
-    "html": "runs/20260517-034926_dca_SPY.html"
+    "html": "runs/20260517-040324_dca_SPY.html"
   },
   {
-    "run_id": "20260517-034927_dca_btd_SPY",
-    "timestamp": "2026-05-17T03:49:27+00:00",
+    "run_id": "20260517-040324_dca_btd_SPY",
+    "timestamp": "2026-05-17T04:03:24+00:00",
     "strategy": "dca_btd",
+    "strategy_description": "DCA with a 'buy the dip' reserve. Most of the budget contributes on the regular cadence (default 80%); the rest waits in cash and gets deployed in chunks whenever the price closes meaningfully below its recent high (default: 10% below the trailing 90-day high). Tries to capture the extra return from buying drawdowns without abandoning the discipline of regular contributions. A single drawdown only fires the reserve once \u2014 the price must recover above the threshold before the next dip-buy can arm.",
     "ticker": "SPY",
     "start": "2015-01-01",
     "end": "2024-12-31",
@@ -83,11 +86,11 @@
       "dip_buys": 4
     },
     "metrics": {
-      "final_value": 29183.43038939829,
+      "final_value": 29183.429831954985,
       "cash_deployed": 12000.000000000018,
-      "total_return": 1.4319525324498539,
-      "cagr": 0.09297786379636253,
-      "max_drawdown": -0.3321267329905535,
+      "total_return": 1.431952485996245,
+      "cagr": 0.09297786170776812,
+      "max_drawdown": -0.3321266687628652,
       "n_buys": 123.0,
       "n_sells": 0.0
     },
@@ -95,11 +98,11 @@
       {
         "name": "buy_hold",
         "metrics": {
-          "final_value": 41456.81962029174,
+          "final_value": 41456.81902701071,
           "cash_deployed": 12000.0,
-          "total_return": 2.454734968357645,
-          "cagr": 0.13204474792533039,
-          "max_drawdown": -0.33717271363429996,
+          "total_return": 2.454734918917559,
+          "cagr": 0.13204474630461616,
+          "max_drawdown": -0.3371726482138067,
           "n_buys": 1.0,
           "n_sells": 0.0
         }
@@ -107,22 +110,23 @@
       {
         "name": "dca_monthly",
         "metrics": {
-          "final_value": 25560.276181084973,
+          "final_value": 25560.273257790326,
           "cash_deployed": 11999.999999999985,
-          "total_return": 1.130023015090417,
-          "cagr": 0.07857890279568869,
-          "max_drawdown": -0.3288747341098778,
+          "total_return": 1.1300227714825297,
+          "cagr": 0.07857889045505728,
+          "max_drawdown": -0.3288746695978097,
           "n_buys": 119.0,
           "n_sells": 0.0
         }
       }
     ],
-    "html": "runs/20260517-034927_dca_btd_SPY.html"
+    "html": "runs/20260517-040324_dca_btd_SPY.html"
   },
   {
-    "run_id": "20260517-034928_rsi_SPY",
-    "timestamp": "2026-05-17T03:49:28+00:00",
+    "run_id": "20260517-040325_rsi_SPY",
+    "timestamp": "2026-05-17T04:03:25+00:00",
     "strategy": "rsi",
+    "strategy_description": "Mean reversion driven by Wilder's Relative Strength Index. When RSI drops into oversold territory (default below 30) we go fully invested; when it climbs into overbought (default above 70) we move back to 100% cash. Tends to do well in choppy, range-bound markets and to lag badly during sustained bull runs because it keeps selling into strength. By default this strategy starts already invested on day one; pass start_in_cash=true to wait for the first oversold signal.",
     "ticker": "SPY",
     "start": "2015-01-01",
     "end": "2024-12-31",
@@ -134,11 +138,11 @@
       "start_in_cash": true
     },
     "metrics": {
-      "final_value": 21601.871217890934,
+      "final_value": 21601.890442186905,
       "cash_deployed": 12000.0,
-      "total_return": 0.8001559348242444,
-      "cagr": 0.06057528406465629,
-      "max_drawdown": -0.2831904634785542,
+      "total_return": 0.8001575368489087,
+      "cagr": 0.060575378487872866,
+      "max_drawdown": -0.28319050976193816,
       "n_buys": 11.0,
       "n_sells": 11.0
     },
@@ -146,11 +150,11 @@
       {
         "name": "buy_hold",
         "metrics": {
-          "final_value": 41456.8038801495,
+          "final_value": 41456.815240294374,
           "cash_deployed": 12000.0,
-          "total_return": 2.454733656679125,
-          "cagr": 0.1320447049266893,
-          "max_drawdown": -0.3371726975633843,
+          "total_return": 2.4547346033578643,
+          "cagr": 0.1320447359601329,
+          "max_drawdown": -0.33717272970521234,
           "n_buys": 1.0,
           "n_sells": 0.0
         }
@@ -158,33 +162,34 @@
       {
         "name": "dca_monthly",
         "metrics": {
-          "final_value": 25560.27346332419,
+          "final_value": 25560.272845130166,
           "cash_deployed": 11999.999999999985,
-          "total_return": 1.1300227886103515,
-          "cagr": 0.07857889132271434,
-          "max_drawdown": -0.328874718947326,
+          "total_return": 1.1300227370941833,
+          "cagr": 0.07857888871302032,
+          "max_drawdown": -0.3288747510751082,
           "n_buys": 119.0,
           "n_sells": 0.0
         }
       }
     ],
-    "html": "runs/20260517-034928_rsi_SPY.html"
+    "html": "runs/20260517-040325_rsi_SPY.html"
   },
   {
-    "run_id": "20260517-034928_buy_hold_QQQ",
-    "timestamp": "2026-05-17T03:49:28+00:00",
+    "run_id": "20260517-040326_buy_hold_QQQ",
+    "timestamp": "2026-05-17T04:03:26+00:00",
     "strategy": "buy_hold",
+    "strategy_description": "Invest the entire budget on day one and never trade again. The baseline every other strategy is measured against \u2014 historically very hard to beat in a strong-up market.",
     "ticker": "QQQ",
     "start": "2018-01-01",
     "end": "2024-12-31",
     "total_budget": 12000.0,
     "params": {},
     "metrics": {
-      "final_value": 40149.99304135538,
+      "final_value": 40150.01323627336,
       "cash_deployed": 12000.0,
-      "total_return": 2.345832753446282,
-      "cagr": 0.18844885570751346,
-      "max_drawdown": -0.3511872087178522,
+      "total_return": 2.345834436356113,
+      "cagr": 0.18844894116229005,
+      "max_drawdown": -0.3511871971603231,
       "n_buys": 1.0,
       "n_sells": 0.0
     },
@@ -192,22 +197,23 @@
       {
         "name": "dca_monthly",
         "metrics": {
-          "final_value": 23897.199559107557,
+          "final_value": 23897.199111150167,
           "cash_deployed": 12000.000000000011,
-          "total_return": 0.9914332965922947,
-          "cagr": 0.1034870450272729,
-          "max_drawdown": -0.2736396634334464,
+          "total_return": 0.9914332592625121,
+          "cagr": 0.10348704207023918,
+          "max_drawdown": -0.2736395199588815,
           "n_buys": 83.0,
           "n_sells": 0.0
         }
       }
     ],
-    "html": "runs/20260517-034928_buy_hold_QQQ.html"
+    "html": "runs/20260517-040326_buy_hold_QQQ.html"
   },
   {
-    "run_id": "20260517-034929_dca_QQQ",
-    "timestamp": "2026-05-17T03:49:29+00:00",
+    "run_id": "20260517-040326_dca_QQQ",
+    "timestamp": "2026-05-17T04:03:27+00:00",
     "strategy": "dca",
+    "strategy_description": "Dollar-cost averaging: split the budget into equal contributions and invest one on each cadence date (monthly by default). Removes timing risk and matches how most people actually invest from a paycheck. Tends to lag a lump-sum buy-hold when the market trends up steadily, and outperform when the early window has a big drawdown.",
     "ticker": "QQQ",
     "start": "2018-01-01",
     "end": "2024-12-31",
@@ -216,11 +222,11 @@
       "cadence": "monthly"
     },
     "metrics": {
-      "final_value": 23897.1982296756,
+      "final_value": 23897.200807305104,
       "cash_deployed": 12000.000000000011,
-      "total_return": 0.9914331858062981,
-      "cagr": 0.10348703625149391,
-      "max_drawdown": -0.2736396055318569,
+      "total_return": 0.9914334006087568,
+      "cagr": 0.10348705326681085,
+      "max_drawdown": -0.2736396308184371,
       "n_buys": 83.0,
       "n_sells": 0.0
     },
@@ -228,22 +234,23 @@
       {
         "name": "buy_hold",
         "metrics": {
-          "final_value": 40150.01727525939,
+          "final_value": 40150.007570227535,
           "cash_deployed": 12000.0,
-          "total_return": 2.3458347729382827,
-          "cagr": 0.18844895825325114,
-          "max_drawdown": -0.35118715832787806,
+          "total_return": 2.345833964185628,
+          "cagr": 0.1884489171864261,
+          "max_drawdown": -0.35118722027537946,
           "n_buys": 1.0,
           "n_sells": 0.0
         }
       }
     ],
-    "html": "runs/20260517-034929_dca_QQQ.html"
+    "html": "runs/20260517-040326_dca_QQQ.html"
   },
   {
-    "run_id": "20260517-034929_fear_greed_SPY",
-    "timestamp": "2026-05-17T03:49:29+00:00",
+    "run_id": "20260517-040327_fear_greed_SPY",
+    "timestamp": "2026-05-17T04:03:27+00:00",
     "strategy": "fear_greed",
+    "strategy_description": "Contrarian timing using CNN's Fear & Greed Index \u2014 a daily 0\u2013100 sentiment score blending price momentum, volatility, breadth, put/call ratios, and safe-haven demand. We buy the ticker when sentiment falls below buy_below (default 25, 'extreme fear') and exit to cash when it climbs above exit_above (default 75, 'extreme greed'). The premise is that crowd extremes mark turning points. CNN's public endpoint only serves roughly the last year of data, so backtest windows are short.",
     "ticker": "SPY",
     "start": "2025-06-01",
     "end": "2026-05-15",
@@ -257,7 +264,7 @@
       "cash_deployed": 12000.0,
       "total_return": 0.07230385694417274,
       "cagr": 0.07624809498749352,
-      "max_drawdown": -0.0888685286388666,
+      "max_drawdown": -0.08886852863886673,
       "n_buys": 3.0,
       "n_sells": 3.0
     },
@@ -265,11 +272,11 @@
       {
         "name": "buy_hold",
         "metrics": {
-          "final_value": 15035.91152895139,
+          "final_value": 15035.913086165201,
           "cash_deployed": 12000.0,
-          "total_return": 0.25299262741261574,
-          "cagr": 0.2679437478049045,
-          "max_drawdown": -0.08884972579331009,
+          "total_return": 0.25299275718043335,
+          "cagr": 0.2679438860275569,
+          "max_drawdown": -0.08884972579331002,
           "n_buys": 1.0,
           "n_sells": 0.0
         }
@@ -277,16 +284,16 @@
       {
         "name": "dca_monthly",
         "metrics": {
-          "final_value": 13341.148312242332,
+          "final_value": 13341.148056821812,
           "cash_deployed": 12000.000000000004,
-          "total_return": 0.1117623593535273,
-          "cagr": 0.11797451561120798,
-          "max_drawdown": -0.07507201911779403,
+          "total_return": 0.11176233806848401,
+          "cagr": 0.11797449308151764,
+          "max_drawdown": -0.07507201911779399,
           "n_buys": 11.0,
           "n_sells": 0.0
         }
       }
     ],
-    "html": "runs/20260517-034929_fear_greed_SPY.html"
+    "html": "runs/20260517-040327_fear_greed_SPY.html"
   }
 ]

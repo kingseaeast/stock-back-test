@@ -15,6 +15,15 @@ from .base import Action, Order
 
 class FearGreed:
     name = "fear_greed"
+    description = (
+        "Contrarian timing using CNN's Fear & Greed Index — a daily 0–100 sentiment "
+        "score blending price momentum, volatility, breadth, put/call ratios, and "
+        "safe-haven demand. We buy the ticker when sentiment falls below "
+        "buy_below (default 25, 'extreme fear') and exit to cash when it climbs "
+        "above exit_above (default 75, 'extreme greed'). The premise is that "
+        "crowd extremes mark turning points. CNN's public endpoint only serves "
+        "roughly the last year of data, so backtest windows are short."
+    )
     data_requirements = frozenset({"prices", "fear_greed"})
 
     def orders(

@@ -70,7 +70,17 @@ def cmd_run(args: argparse.Namespace) -> int:
 
 def cmd_list_strategies(_: argparse.Namespace) -> int:
     for name in sorted(strategies.REGISTRY):
-        print(name)
+        cls = strategies.REGISTRY[name]
+        print(f"{name}\t{getattr(cls, 'description', '')}")
+    return 0
+
+
+def cmd_describe(args: argparse.Namespace) -> int:
+    cls = strategies.get(args.strategy)
+    print(f"# {cls.name}\n")
+    print(getattr(cls, "description", "(no description)"))
+    print()
+    print(f"Data requirements: {sorted(cls.data_requirements)}")
     return 0
 
 
@@ -89,8 +99,12 @@ def build_parser() -> argparse.ArgumentParser:
     pr.add_argument("--slippage-bps", type=float, default=5.0)
     pr.set_defaults(func=cmd_run)
 
-    pl = sub.add_parser("list-strategies", help="List registered strategies")
+    pl = sub.add_parser("list-strategies", help="List registered strategies (name + one-line description)")
     pl.set_defaults(func=cmd_list_strategies)
+
+    pd = sub.add_parser("describe", help="Print a strategy's full description and data requirements")
+    pd.add_argument("strategy", choices=sorted(strategies.REGISTRY))
+    pd.set_defaults(func=cmd_describe)
 
     return p
 

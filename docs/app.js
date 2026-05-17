@@ -37,11 +37,19 @@
     }
   }
 
+  function escapeAttr(s) {
+    return (s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  }
+
   function row(entry) {
     const m = entry.metrics || {};
+    const desc = entry.strategy_description || "";
+    const strategyCell = desc
+      ? `<span class="strategy-name" title="${escapeAttr(desc)}">${entry.strategy}</span>`
+      : entry.strategy;
     const cells = [
       ["Date", fmtDate(entry.timestamp)],
-      ["Strategy", entry.strategy],
+      ["Strategy", strategyCell],
       ["Ticker", entry.ticker],
       ["Period", `${entry.start} → ${entry.end}`],
       ["Budget", fmtMoney(entry.total_budget), "num"],

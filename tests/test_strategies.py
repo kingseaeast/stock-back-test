@@ -24,6 +24,15 @@ class TestRegistry:
         with pytest.raises(KeyError, match="Unknown strategy"):
             get("does_not_exist")
 
+    def test_every_strategy_has_a_meaningful_description(self):
+        """Each registered strategy must carry a plain-English description
+        that gets rendered in reports and surfaced to the AI agent."""
+        for name, cls in REGISTRY.items():
+            desc = getattr(cls, "description", None)
+            assert isinstance(desc, str) and len(desc) >= 40, (
+                f"{name!r} needs a description ≥40 chars (got {desc!r})"
+            )
+
 
 class TestBuyHold:
     def test_single_order_on_first_day(self, linear_prices):

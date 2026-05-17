@@ -35,6 +35,7 @@ class Order:
 @runtime_checkable
 class Strategy(Protocol):
     name: ClassVar[str]
+    description: ClassVar[str]                    # plain-English summary; rendered in reports
     data_requirements: ClassVar[frozenset[str]]  # e.g. frozenset({"prices"})
 
     def orders(

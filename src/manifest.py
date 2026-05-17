@@ -8,6 +8,7 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
+from . import strategies
 from .engine import Result
 
 MANIFEST_PATH = Path("docs/runs.json")
@@ -15,10 +16,12 @@ MANIFEST_PATH = Path("docs/runs.json")
 
 def _run_to_entry(result: Result, html_relative: str) -> dict:
     cfg = result.config
+    strategy_cls = strategies.get(cfg.strategy)
     return {
         "run_id": result.run_id,
         "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "strategy": cfg.strategy,
+        "strategy_description": getattr(strategy_cls, "description", ""),
         "ticker": cfg.ticker.upper(),
         "start": cfg.start.isoformat(),
         "end": cfg.end.isoformat(),

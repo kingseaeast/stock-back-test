@@ -53,6 +53,7 @@ code { background: var(--bg-row); padding: 1px 6px; border-radius: 4px; font-siz
 th[data-sort] { cursor: pointer; user-select: none; }
 th[data-sort]:hover { background: #eef2f5; }
 .sort-indicator { color: var(--link); font-size: 0.85em; margin-left: 4px; }
+.strategy-name { border-bottom: 1px dotted var(--muted); cursor: help; }
 .center { text-align: center; }
 footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; }
 

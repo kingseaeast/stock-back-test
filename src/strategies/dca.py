@@ -18,6 +18,13 @@ _CADENCE_FREQ = {
 
 class DCA:
     name = "dca"
+    description = (
+        "Dollar-cost averaging: split the budget into equal contributions and "
+        "invest one on each cadence date (monthly by default). Removes timing "
+        "risk and matches how most people actually invest from a paycheck. "
+        "Tends to lag a lump-sum buy-hold when the market trends up steadily, "
+        "and outperform when the early window has a big drawdown."
+    )
     data_requirements = frozenset({"prices"})
 
     def orders(

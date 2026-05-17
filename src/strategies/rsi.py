@@ -38,6 +38,15 @@ def wilder_rsi(close: pd.Series, period: int) -> pd.Series:
 
 class RSI:
     name = "rsi"
+    description = (
+        "Mean reversion driven by Wilder's Relative Strength Index. When RSI "
+        "drops into oversold territory (default below 30) we go fully invested; "
+        "when it climbs into overbought (default above 70) we move back to 100% "
+        "cash. Tends to do well in choppy, range-bound markets and to lag badly "
+        "during sustained bull runs because it keeps selling into strength. By "
+        "default this strategy starts already invested on day one; pass "
+        "start_in_cash=true to wait for the first oversold signal."
+    )
     data_requirements = frozenset({"prices"})
 
     def orders(

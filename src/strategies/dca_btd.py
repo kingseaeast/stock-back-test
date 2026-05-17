@@ -22,6 +22,15 @@ from .dca import _CADENCE_FREQ
 
 class DCABTD:
     name = "dca_btd"
+    description = (
+        "DCA with a 'buy the dip' reserve. Most of the budget contributes on the "
+        "regular cadence (default 80%); the rest waits in cash and gets deployed "
+        "in chunks whenever the price closes meaningfully below its recent high "
+        "(default: 10% below the trailing 90-day high). Tries to capture the "
+        "extra return from buying drawdowns without abandoning the discipline of "
+        "regular contributions. A single drawdown only fires the reserve once — "
+        "the price must recover above the threshold before the next dip-buy can arm."
+    )
     data_requirements = frozenset({"prices"})
 
     def orders(
