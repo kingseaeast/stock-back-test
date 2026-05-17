@@ -1,0 +1,95 @@
+[
+  {
+    "run_id": "20260517-013420_dca_SPY",
+    "timestamp": "2026-05-17T01:34:20+00:00",
+    "strategy": "dca",
+    "ticker": "SPY",
+    "start": "2015-01-01",
+    "end": "2024-12-31",
+    "total_budget": 12000.0,
+    "params": {
+      "cadence": "monthly"
+    },
+    "metrics": {
+      "final_value": 25560.27514036782,
+      "cash_deployed": 11999.999999999985,
+      "total_return": 1.1300229283639873,
+      "cagr": 0.07857889840232168,
+      "max_drawdown": -0.32887476919200737,
+      "n_buys": 119.0,
+      "n_sells": 0.0
+    },
+    "benchmarks": [
+      {
+        "name": "buy_hold",
+        "metrics": {
+          "final_value": 41456.80826014567,
+          "cash_deployed": 12000.0,
+          "total_return": 2.4547340216788056,
+          "cagr": 0.13204471689188657,
+          "max_drawdown": -0.3371727469129618,
+          "n_buys": 1.0,
+          "n_sells": 0.0
+        }
+      }
+    ],
+    "html": "runs/20260517-013420_dca_SPY.html"
+  },
+  {
+    "run_id": "20260517-013421_buy_hold_SPY",
+    "timestamp": "2026-05-17T01:34:21+00:00",
+    "strategy": "buy_hold",
+    "ticker": "SPY",
+    "start": "2015-01-01",
+    "end": "2024-12-31",
+    "total_budget": 12000.0,
+    "params": {},
+    "metrics": {
+      "final_value": 41456.82340700847,
+      "cash_deployed": 12000.0,
+      "total_return": 2.4547352839173726,
+      "cagr": 0.13204475826981388,
+      "max_drawdown": -0.3371726642847273,
+      "n_buys": 1.0,
+      "n_sells": 0.0
+    },
+    "benchmarks": [],
+    "html": "runs/20260517-013421_buy_hold_SPY.html"
+  },
+  {
+    "run_id": "20260517-013421_dca_QQQ",
+    "timestamp": "2026-05-17T01:34:21+00:00",
+    "strategy": "dca",
+    "ticker": "QQQ",
+    "start": "2018-01-01",
+    "end": "2024-12-31",
+    "total_budget": 12000.0,
+    "params": {
+      "cadence": "monthly"
+    },
+    "metrics": {
+      "final_value": 23897.1992255213,
+      "cash_deployed": 12000.000000000011,
+      "total_return": 0.99143326879344,
+      "cagr": 0.10348704282522014,
+      "max_drawdown": -0.27363960966464757,
+      "n_buys": 83.0,
+      "n_sells": 0.0
+    },
+    "benchmarks": [
+      {
+        "name": "buy_hold",
+        "metrics": {
+          "final_value": 40150.00111932013,
+          "cash_deployed": 12000.0,
+          "total_return": 2.3458334266100107,
+          "cagr": 0.1884488898894181,
+          "max_drawdown": -0.351187309497777,
+          "n_buys": 1.0,
+          "n_sells": 0.0
+        }
+      }
+    ],
+    "html": "runs/20260517-013421_dca_QQQ.html"
+  }
+]
