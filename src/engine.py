@@ -93,6 +93,7 @@ def _simulate(
         by_exec_day.setdefault(trading_days[exec_idx], []).append(order)
 
     cash = 0.0
+    reserve_cash = 0.0  # earmarked from SELL_FRACTION; only DEPLOY_RESERVE spends it
     shares = 0.0
     cash_deployed_total = 0.0
     equity_series = []
@@ -102,19 +103,20 @@ def _simulate(
     slip = slippage_bps / 10_000.0
     comm = commission_bps / 10_000.0
 
-    def buy_all_available_cash(day: pd.Timestamp, price: float) -> None:
-        nonlocal cash, shares
-        if cash <= 0:
-            return
+    def buy_from_pocket(day: pd.Timestamp, price: float, available: float) -> float:
+        """Spend `available` cash on shares. Returns the cash actually consumed
+        (notional + commission). Caller subtracts from the right pocket."""
+        if available <= 0:
+            return 0.0
+        nonlocal shares
         exec_price = price * (1 + slip)
-        # Solve: bought_shares*exec_price * (1 + comm) == cash
-        spend_on_shares = cash / (1 + comm)
+        spend_on_shares = available / (1 + comm)
         bought_shares = spend_on_shares / exec_price
         notional = bought_shares * exec_price
         commission = notional * comm
         shares += bought_shares
-        cash -= notional + commission
         trades.append(Trade(day, "buy", bought_shares, exec_price, notional, commission))
+        return notional + commission
 
     def sell_all_shares(day: pd.Timestamp, price: float) -> None:
         nonlocal cash, shares
@@ -127,19 +129,39 @@ def _simulate(
         trades.append(Trade(day, "sell", shares, exec_price, notional, commission))
         shares = 0.0
 
+    def sell_fraction_to_reserve(day: pd.Timestamp, price: float, fraction: float) -> None:
+        nonlocal reserve_cash, shares
+        if shares <= 0 or fraction <= 0:
+            return
+        clip = min(max(fraction, 0.0), 1.0)
+        qty = shares * clip
+        exec_price = price * (1 - slip)
+        notional = qty * exec_price
+        commission = notional * comm
+        reserve_cash += notional - commission
+        trades.append(Trade(day, "sell", qty, exec_price, notional, commission))
+        shares -= qty
+
     for day in trading_days:
         price = float(close.loc[day])
         for order in by_exec_day.get(day, []):
             if order.action == Action.DEPOSIT_AND_BUY:
                 cash += order.amount
                 cash_deployed_total += order.amount
-                buy_all_available_cash(day, price)
+                spent = buy_from_pocket(day, price, cash)
+                cash -= spent
             elif order.action == Action.BUY_ALL_CASH:
-                buy_all_available_cash(day, price)
+                spent = buy_from_pocket(day, price, cash)
+                cash -= spent
             elif order.action == Action.SELL_ALL:
                 sell_all_shares(day, price)
+            elif order.action == Action.SELL_FRACTION:
+                sell_fraction_to_reserve(day, price, order.amount)
+            elif order.action == Action.DEPLOY_RESERVE:
+                spent = buy_from_pocket(day, price, reserve_cash)
+                reserve_cash -= spent
 
-        equity_series.append(cash + shares * price)
+        equity_series.append(cash + reserve_cash + shares * price)
         deployed_series.append(cash_deployed_total)
 
     equity = pd.Series(equity_series, index=close.index, name="equity")

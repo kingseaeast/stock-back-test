@@ -157,6 +157,8 @@
     DEPOSIT_AND_BUY: "deposit_and_buy",
     BUY_ALL_CASH: "buy_all_cash",
     SELL_ALL: "sell_all",
+    SELL_FRACTION: "sell_fraction",
+    DEPLOY_RESERVE: "deploy_reserve",
   });
 
   function order(date, action, amount) {
@@ -324,6 +326,57 @@
     },
   };
 
+  strategies.dca_fg_rebalance = {
+    name: "dca_fg_rebalance",
+    dataRequirements: ["prices", "fear_greed"],
+    orders(ctx, totalBudget, params) {
+      const prices = ctx.prices;
+      const fg = ctx.fear_greed;
+      if (!prices.length) return [];
+      const p = params || {};
+      const cadence = p.cadence || "monthly";
+      const greedThreshold = p.greed_threshold ?? 75;
+      const fearThreshold = p.fear_threshold ?? 25;
+      const sellPct = p.sell_pct ?? 0.25;
+      const indexCol = p.index_type || "fear_greed";
+      if (!(fearThreshold > 0 && fearThreshold < greedThreshold && greedThreshold < 100)) {
+        throw new Error("Need 0 < fear_threshold < greed_threshold < 100");
+      }
+      if (!(sellPct > 0 && sellPct < 1)) throw new Error("sell_pct must be in (0,1)");
+
+      const tradingDates = prices.map((row) => row.date);
+      const contribDates = cadenceContributionDates(tradingDates, cadence);
+      const perContribution = contribDates.length ? totalBudget / contribDates.length : 0;
+      const orders = contribDates.map((d) => order(d, Action.DEPOSIT_AND_BUY, perContribution));
+
+      const signal = alignByDate(prices, fg, indexCol);
+      let inGreed = false;
+      let inFear = false;
+      for (let i = 1; i < prices.length; i++) {
+        const v = signal[i];
+        if (v == null || !Number.isFinite(v)) continue;
+        if (v > greedThreshold) {
+          if (!inGreed) {
+            orders.push(order(prices[i].date, Action.SELL_FRACTION, sellPct));
+            inGreed = true;
+          }
+          inFear = false;
+        } else if (v < fearThreshold) {
+          if (!inFear) {
+            orders.push(order(prices[i].date, Action.DEPLOY_RESERVE));
+            inFear = true;
+          }
+          inGreed = false;
+        } else {
+          inGreed = false;
+          inFear = false;
+        }
+      }
+      orders.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+      return orders;
+    },
+  };
+
   strategies.fear_greed = {
     name: "fear_greed",
     dataRequirements: ["prices", "fear_greed"],
@@ -384,22 +437,24 @@
     }
 
     let cash = 0;
+    let reserveCash = 0;  // earmarked from SELL_FRACTION; only DEPLOY_RESERVE spends it
     let shares = 0;
     let deployedTotal = 0;
     const equity = new Array(prices.length);
     const deployed = new Array(prices.length);
     const trades = [];
 
-    function buyAll(date, price) {
-      if (cash <= 0) return;
+    function buyFromPocket(date, price, available) {
+      // Spend `available` cash on shares; returns the amount actually consumed.
+      if (available <= 0) return 0;
       const execPrice = price * (1 + slip);
-      const spendOnShares = cash / (1 + comm);
+      const spendOnShares = available / (1 + comm);
       const bought = spendOnShares / execPrice;
       const notional = bought * execPrice;
       const commission = notional * comm;
       shares += bought;
-      cash -= notional + commission;
       trades.push({ date, side: "buy", shares: bought, price: execPrice, notional, commission });
+      return notional + commission;
     }
 
     function sellAll(date, price) {
@@ -412,6 +467,18 @@
       shares = 0;
     }
 
+    function sellFractionToReserve(date, price, fraction) {
+      if (shares <= 0 || fraction <= 0) return;
+      const clip = Math.max(0, Math.min(1, fraction));
+      const qty = shares * clip;
+      const execPrice = price * (1 - slip);
+      const notional = qty * execPrice;
+      const commission = notional * comm;
+      reserveCash += notional - commission;
+      trades.push({ date, side: "sell", shares: qty, price: execPrice, notional, commission });
+      shares -= qty;
+    }
+
     for (let i = 0; i < prices.length; i++) {
       const row = prices[i];
       const price = row.adj_close;
@@ -420,14 +487,18 @@
         if (o.action === Action.DEPOSIT_AND_BUY) {
           cash += o.amount;
           deployedTotal += o.amount;
-          buyAll(row.date, price);
+          cash -= buyFromPocket(row.date, price, cash);
         } else if (o.action === Action.BUY_ALL_CASH) {
-          buyAll(row.date, price);
+          cash -= buyFromPocket(row.date, price, cash);
         } else if (o.action === Action.SELL_ALL) {
           sellAll(row.date, price);
+        } else if (o.action === Action.SELL_FRACTION) {
+          sellFractionToReserve(row.date, price, o.amount);
+        } else if (o.action === Action.DEPLOY_RESERVE) {
+          reserveCash -= buyFromPocket(row.date, price, reserveCash);
         }
       }
-      equity[i] = cash + shares * price;
+      equity[i] = cash + reserveCash + shares * price;
       deployed[i] = deployedTotal;
     }
 

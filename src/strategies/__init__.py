@@ -7,6 +7,7 @@ from .buy_hold import BuyHold
 from .dca import DCA
 from .dca_btd import DCABTD
 from .dca_fg import DCAFearGreed
+from .dca_fg_rebalance import DCAFearGreedRebalance
 from .fear_greed import FearGreed
 from .rsi import RSI
 
@@ -15,6 +16,7 @@ REGISTRY: dict[str, type[Strategy]] = {
     DCA.name: DCA,
     DCABTD.name: DCABTD,
     DCAFearGreed.name: DCAFearGreed,
+    DCAFearGreedRebalance.name: DCAFearGreedRebalance,
     FearGreed.name: FearGreed,
     RSI.name: RSI,
 }

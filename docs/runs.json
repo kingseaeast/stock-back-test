@@ -412,5 +412,60 @@
       }
     ],
     "html": "runs/20260517-070545447_dca_fg_SPY.html"
+  },
+  {
+    "run_id": "20260517-071645747_dca_fg_rebalance_SPY",
+    "timestamp": "2026-05-17T07:16:45+00:00",
+    "strategy": "dca_fg_rebalance",
+    "strategy_description": "DCA with sentiment-driven trim-and-deploy. Contributes on the regular cadence; when CNN's Fear & Greed climbs above greed_threshold (default 75, 'extreme greed') it sells a sell_pct slice of current holdings (default 25%) into a war chest; when sentiment crashes below fear_threshold (default 25) it deploys the entire war chest back into the position. Buys the dip; trims the top. Each greed/fear episode fires once \u2014 sentiment must cross back through the neutral zone before re-arming.",
+    "ticker": "SPY",
+    "start": "2015-01-01",
+    "end": "2024-12-31",
+    "total_budget": 10000.0,
+    "params": {
+      "cadence": "monthly",
+      "greed_threshold": 75,
+      "fear_threshold": 25,
+      "sell_pct": 0.25
+    },
+    "data_options": {
+      "fg_source": "whit3rabbit"
+    },
+    "metrics": {
+      "final_value": 18800.390069240486,
+      "cash_deployed": 9999.99999999999,
+      "total_return": 0.8800390069240502,
+      "cagr": 0.06519213242346744,
+      "max_drawdown": -0.2978120823764482,
+      "n_buys": 130.0,
+      "n_sells": 43.0
+    },
+    "benchmarks": [
+      {
+        "name": "buy_hold",
+        "metrics": {
+          "final_value": 34547.346527979746,
+          "cash_deployed": 10000.0,
+          "total_return": 2.4547346527979745,
+          "cagr": 0.13204473758084823,
+          "max_drawdown": -0.33717276298387266,
+          "n_buys": 1.0,
+          "n_sells": 0.0
+        }
+      },
+      {
+        "name": "dca_monthly",
+        "metrics": {
+          "final_value": 21300.23054373133,
+          "cash_deployed": 9999.99999999999,
+          "total_return": 1.1300230543731349,
+          "cagr": 0.07857890478566332,
+          "max_drawdown": -0.3288747851807157,
+          "n_buys": 119.0,
+          "n_sells": 0.0
+        }
+      }
+    ],
+    "html": "runs/20260517-071645747_dca_fg_rebalance_SPY.html"
   }
 ]

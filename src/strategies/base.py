@@ -20,16 +20,18 @@ import pandas as pd
 
 
 class Action(str, Enum):
-    DEPOSIT_AND_BUY = "deposit_and_buy"  # add cash to portfolio, then buy with it
-    BUY_ALL_CASH = "buy_all_cash"        # spend all current cash on shares
-    SELL_ALL = "sell_all"                # liquidate all shares to cash
+    DEPOSIT_AND_BUY = "deposit_and_buy"   # add cash to portfolio, then buy with it
+    BUY_ALL_CASH = "buy_all_cash"         # spend all current cash on shares
+    SELL_ALL = "sell_all"                 # liquidate all shares to cash
+    SELL_FRACTION = "sell_fraction"       # sell `amount` (0..1) of current shares → reserve_cash
+    DEPLOY_RESERVE = "deploy_reserve"     # spend all reserve_cash on shares
 
 
 @dataclass(frozen=True)
 class Order:
     date: pd.Timestamp                   # the *signal* date; engine executes next bar
     action: Action
-    amount: float = 0.0                  # only used by DEPOSIT_AND_BUY
+    amount: float = 0.0                  # DEPOSIT_AND_BUY: dollars; SELL_FRACTION: 0..1
 
 
 @runtime_checkable

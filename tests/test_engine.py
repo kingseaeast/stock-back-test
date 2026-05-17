@@ -153,6 +153,71 @@ class TestEquityConservation:
         assert (equity.iloc[1:] > 0).all()
 
 
+class TestSellFractionAndDeployReserve:
+    def test_sell_fraction_moves_shares_to_reserve(self):
+        # Buy at $100, prices go to $200, sell 25%, then rest stays invested.
+        prices = make_prices([100, 100, 200, 200, 200])
+        orders = [
+            Order(date=prices.index[0], action=Action.DEPOSIT_AND_BUY, amount=10_000),
+            Order(date=prices.index[1], action=Action.SELL_FRACTION, amount=0.25),
+        ]
+        equity, deployed, trades = _simulate(prices, orders, commission_bps=0, slippage_bps=0)
+        assert len(trades) == 2
+        # Bought ~99.0099 shares at $101 ($10000 / $101) on day 1. Sell 25% on day 2 at $200.
+        first_buy = trades[0]
+        sell_trade = trades[1]
+        assert sell_trade.side == "sell"
+        assert sell_trade.shares == pytest.approx(first_buy.shares * 0.25)
+        # Reserve cash + remaining shares value should equal final equity.
+        # On day 4 prices are still $200; remaining shares = 75% of original.
+        final_remaining = first_buy.shares * 0.75
+        reserve = sell_trade.notional
+        assert equity.iloc[-1] == pytest.approx(reserve + final_remaining * 200.0)
+
+    def test_dca_contribution_does_not_consume_reserve(self):
+        """A SELL_FRACTION reserve must survive a subsequent DEPOSIT_AND_BUY."""
+        prices = make_prices([100, 100, 200, 200, 200, 200, 200])
+        orders = [
+            Order(date=prices.index[0], action=Action.DEPOSIT_AND_BUY, amount=10_000),
+            Order(date=prices.index[1], action=Action.SELL_FRACTION, amount=0.25),
+            Order(date=prices.index[3], action=Action.DEPOSIT_AND_BUY, amount=1_000),
+        ]
+        equity, deployed, trades = _simulate(prices, orders, commission_bps=0, slippage_bps=0)
+        # 1 initial buy, 1 sell, 1 second DCA buy = 3 trades. Reserve untouched.
+        assert len(trades) == 3
+        # Final deployed = 10000 + 1000 = 11000 (deposits, not buys)
+        assert deployed.iloc[-1] == pytest.approx(11_000.0)
+        # DCA buy on day 4 used only the $1000 deposit, not the reserve.
+        dca_buy = trades[2]
+        assert dca_buy.notional == pytest.approx(1_000.0)
+
+    def test_deploy_reserve_spends_only_reserve_not_cash(self):
+        # Sequence: deposit, sell fraction → reserve has cash;
+        # then deposit + DEPLOY_RESERVE; cash should remain in cash, reserve emptied.
+        prices = make_prices([100, 100, 200, 200, 200, 200])
+        orders = [
+            Order(date=prices.index[0], action=Action.DEPOSIT_AND_BUY, amount=10_000),
+            Order(date=prices.index[1], action=Action.SELL_FRACTION, amount=0.50),
+            Order(date=prices.index[2], action=Action.DEPLOY_RESERVE),
+        ]
+        equity, _, trades = _simulate(prices, orders, commission_bps=0, slippage_bps=0)
+        # 1 initial buy, 1 sell, 1 deploy-buy = 3 trades
+        assert len(trades) == 3
+        assert trades[2].side == "buy"
+        # The DEPLOY_RESERVE buy should equal the reserve_cash that the prior SELL_FRACTION created.
+        assert trades[2].notional == pytest.approx(trades[1].notional)
+
+    def test_deploy_reserve_with_empty_reserve_is_noop(self):
+        prices = make_prices([100, 100, 100])
+        orders = [
+            Order(date=prices.index[0], action=Action.DEPOSIT_AND_BUY, amount=1_000),
+            Order(date=prices.index[1], action=Action.DEPLOY_RESERVE),
+        ]
+        equity, _, trades = _simulate(prices, orders, commission_bps=0, slippage_bps=0)
+        # Only the initial buy fires.
+        assert len(trades) == 1
+
+
 class TestSellAll:
     def test_sell_all_zero_costs_returns_full_invested_capital_at_same_price(self):
         prices = make_prices([100, 100, 100, 100])
