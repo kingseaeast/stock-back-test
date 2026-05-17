@@ -277,6 +277,53 @@
     },
   };
 
+  strategies.dca_fg = {
+    name: "dca_fg",
+    dataRequirements: ["prices", "fear_greed"],
+    orders(ctx, totalBudget, params) {
+      const prices = ctx.prices;
+      const fg = ctx.fear_greed;
+      if (!prices.length) return [];
+      const p = params || {};
+      const cadence = p.cadence || "monthly";
+      const reserve = p.fear_reserve_pct ?? 0.20;
+      const fearThreshold = p.fear_threshold ?? 25;
+      const fearBuys = p.fear_buys ?? 4;
+      const indexCol = p.index_type || "fear_greed";
+      if (!(reserve >= 0 && reserve < 1)) throw new Error("fear_reserve_pct must be in [0,1)");
+      if (!(fearThreshold > 0 && fearThreshold < 100)) throw new Error("fear_threshold must be in (0,100)");
+      if (fearBuys < 1) throw new Error("fear_buys must be >= 1");
+
+      const dcaTotal = totalBudget * (1 - reserve);
+      const reserveTotal = totalBudget * reserve;
+      const perFearBuy = fearBuys > 0 ? reserveTotal / fearBuys : 0;
+
+      const tradingDates = prices.map((row) => row.date);
+      const contribDates = cadenceContributionDates(tradingDates, cadence);
+      const perContribution = contribDates.length ? dcaTotal / contribDates.length : 0;
+      const orders = contribDates.map((d) => order(d, Action.DEPOSIT_AND_BUY, perContribution));
+
+      const signal = alignByDate(prices, fg, indexCol);
+      let reserveRemaining = reserveTotal;
+      let inFear = false;
+      for (let i = 1; i < prices.length && reserveRemaining > 0; i++) {
+        const v = signal[i];
+        if (v == null || !Number.isFinite(v)) continue;
+        const below = v < fearThreshold;
+        if (below && !inFear) {
+          const amount = Math.min(perFearBuy, reserveRemaining);
+          orders.push(order(prices[i].date, Action.DEPOSIT_AND_BUY, amount));
+          reserveRemaining -= amount;
+          inFear = true;
+        } else if (!below) {
+          inFear = false;
+        }
+      }
+      orders.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+      return orders;
+    },
+  };
+
   strategies.fear_greed = {
     name: "fear_greed",
     dataRequirements: ["prices", "fear_greed"],

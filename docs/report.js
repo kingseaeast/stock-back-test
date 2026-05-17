@@ -128,7 +128,8 @@
 
   function buildFigure(result, state) {
     const runs = [result.strategy, ...result.benchmarks];
-    const showFg = state.strategy === "fear_greed";
+    // Show the F&G subplot whenever the report carries F&G data (strategy needs it).
+    const showFg = !!(state.data && state.data.fear_greed);
     const rows = showFg ? 5 : 4;
     const titles = [
       "Equity curves (same total budget)",
@@ -215,26 +216,27 @@
         line: { color: "#8e44ad" }, showlegend: false,
         xaxis: "x", yaxis: "y5",
       });
-      const buyBelow = state.currentParams.buy_below ?? 25;
-      const exitAbove = state.currentParams.exit_above ?? 75;
-      layout.shapes = [
-        {
+      // Threshold lines vary by strategy: fear_greed has buy_below+exit_above,
+      // dca_fg has fear_threshold. Render whichever the current params declare.
+      layout.shapes = layout.shapes || [];
+      const cur = state.currentParams || {};
+      const addLine = (y, color, label, anchor) => {
+        layout.shapes.push({
           type: "line", xref: "x", yref: "y5",
           x0: state.currentConfig.start, x1: state.currentConfig.end,
-          y0: buyBelow, y1: buyBelow,
-          line: { color: "#2ca02c", dash: "dash", width: 1 },
-        },
-        {
-          type: "line", xref: "x", yref: "y5",
-          x0: state.currentConfig.start, x1: state.currentConfig.end,
-          y0: exitAbove, y1: exitAbove,
-          line: { color: "#d62728", dash: "dash", width: 1 },
-        },
-      ];
-      layout.annotations.push(
-        { xref: "x", yref: "y5", x: state.currentConfig.start, y: buyBelow, text: `buy < ${buyBelow}`, showarrow: false, xanchor: "left", yanchor: "bottom", font: { color: "#2ca02c", size: 11 } },
-        { xref: "x", yref: "y5", x: state.currentConfig.start, y: exitAbove, text: `exit > ${exitAbove}`, showarrow: false, xanchor: "left", yanchor: "top", font: { color: "#d62728", size: 11 } },
-      );
+          y0: y, y1: y,
+          line: { color, dash: "dash", width: 1 },
+        });
+        layout.annotations.push({
+          xref: "x", yref: "y5", x: state.currentConfig.start, y,
+          text: `${label} ${y}`, showarrow: false,
+          xanchor: "left", yanchor: anchor,
+          font: { color, size: 11 },
+        });
+      };
+      if (cur.buy_below != null) addLine(Number(cur.buy_below), "#2ca02c", "buy <", "bottom");
+      if (cur.exit_above != null) addLine(Number(cur.exit_above), "#d62728", "exit >", "top");
+      if (cur.fear_threshold != null) addLine(Number(cur.fear_threshold), "#2ca02c", "fear-buy <", "bottom");
     }
 
     return { data, layout };

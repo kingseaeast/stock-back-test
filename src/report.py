@@ -193,17 +193,25 @@ def _build_static_figure(result: Result, prices: pd.DataFrame,
     fig.update_yaxes(title_text="Deployed ($)", row=4, col=1)
 
     if show_fg and fg_series is not None:
-        buy_below = float(cfg.params.get("buy_below", 25))
-        exit_above = float(cfg.params.get("exit_above", 75))
         fig.add_trace(
             go.Scatter(x=fg_series.index, y=fg_series.values, name=fg_col,
                        line=dict(color="#8e44ad"), showlegend=False),
             row=5, col=1,
         )
-        fig.add_hline(y=buy_below, line=dict(color="#2ca02c", dash="dash"), row=5, col=1,
-                      annotation_text=f"buy < {buy_below}", annotation_position="top left")
-        fig.add_hline(y=exit_above, line=dict(color="#d62728", dash="dash"), row=5, col=1,
-                      annotation_text=f"exit > {exit_above}", annotation_position="bottom left")
+        # Threshold lines vary by strategy. fear_greed uses buy_below/exit_above
+        # (full all-in/all-out), dca_fg uses just fear_threshold (one-sided dip).
+        if "buy_below" in cfg.params:
+            v = float(cfg.params["buy_below"])
+            fig.add_hline(y=v, line=dict(color="#2ca02c", dash="dash"), row=5, col=1,
+                          annotation_text=f"buy < {v}", annotation_position="top left")
+        if "exit_above" in cfg.params:
+            v = float(cfg.params["exit_above"])
+            fig.add_hline(y=v, line=dict(color="#d62728", dash="dash"), row=5, col=1,
+                          annotation_text=f"exit > {v}", annotation_position="bottom left")
+        if "fear_threshold" in cfg.params:
+            v = float(cfg.params["fear_threshold"])
+            fig.add_hline(y=v, line=dict(color="#2ca02c", dash="dash"), row=5, col=1,
+                          annotation_text=f"fear-buy < {v}", annotation_position="top left")
         fig.update_yaxes(title_text="F&G score", range=[0, 100], row=5, col=1)
 
     fig.update_layout(
@@ -224,7 +232,8 @@ def render(result: Result, output_path: Path) -> Path:
     prices = load_prices(cfg.ticker, cfg.start, cfg.end)
     prices_records = _prices_to_records(prices)
 
-    show_fg = cfg.strategy == "fear_greed"
+    strategy_cls = strategies.get(cfg.strategy)
+    show_fg = "fear_greed" in strategy_cls.data_requirements
     fg_records: list[dict] = []
     fg_series: pd.Series | None = None
     fg_col = "fear_greed"

@@ -357,5 +357,60 @@
       }
     ],
     "html": "runs/20260517-053048163_fear_greed_SPY.html"
+  },
+  {
+    "run_id": "20260517-070545447_dca_fg_SPY",
+    "timestamp": "2026-05-17T07:05:45+00:00",
+    "strategy": "dca_fg",
+    "strategy_description": "DCA + 'buy the fear'. Most of the budget contributes on the regular cadence (default 80%); the rest waits in cash and deploys in chunks whenever CNN's Fear & Greed index closes below the fear_threshold (default 25, 'extreme fear'). Combines DCA's discipline with a contrarian boost on sentiment crashes. A single fear episode only fires the reserve once \u2014 the index must recover above the threshold before the next fear-buy can arm. Requires F&G data; pick the source via --fg-source.",
+    "ticker": "SPY",
+    "start": "2015-01-01",
+    "end": "2024-12-31",
+    "total_budget": 10000.0,
+    "params": {
+      "cadence": "monthly",
+      "fear_reserve_pct": 0.2,
+      "fear_threshold": 25,
+      "fear_buys": 4
+    },
+    "data_options": {
+      "fg_source": "whit3rabbit"
+    },
+    "metrics": {
+      "final_value": 23738.939435291355,
+      "cash_deployed": 10000.000000000038,
+      "total_return": 1.3738939435291266,
+      "cagr": 0.09033902617447875,
+      "max_drawdown": -0.3319639525827868,
+      "n_buys": 123.0,
+      "n_sells": 0.0
+    },
+    "benchmarks": [
+      {
+        "name": "buy_hold",
+        "metrics": {
+          "final_value": 34547.34702238075,
+          "cash_deployed": 10000.0,
+          "total_return": 2.4547347022380754,
+          "cagr": 0.13204473920156312,
+          "max_drawdown": -0.3371727469129619,
+          "n_buys": 1.0,
+          "n_sells": 0.0
+        }
+      },
+      {
+        "name": "dca_monthly",
+        "metrics": {
+          "final_value": 21300.232342304265,
+          "cash_deployed": 9999.99999999999,
+          "total_return": 1.1300232342304284,
+          "cagr": 0.07857891389683114,
+          "max_drawdown": -0.32887476770041135,
+          "n_buys": 119.0,
+          "n_sells": 0.0
+        }
+      }
+    ],
+    "html": "runs/20260517-070545447_dca_fg_SPY.html"
   }
 ]
