@@ -8,13 +8,18 @@ Compares the Python backtest engine (`src/engine.py`) against the browser-JS eng
 
 Why: the interactive reports re-run the backtest in the browser, so we maintain two engines. If they drift, users see different numbers than the agent produced. This script catches drift early.
 
+Two ways to run it:
+
 ```sh
+# Standalone script — full table + exit code, no test runner
 uv run python scripts/check_engine_parity.py
-# 8/8 reports passed parity.
-# exit 0
+
+# Same checks wired into pytest as the `integration` marker
+# (parameterized one test per report so failures point at exact file + metric)
+uv run pytest -m integration
 ```
 
-Exit code is `1` on any divergence above tolerance, `0` otherwise — wire it into CI or a pre-push hook when ready.
+Both exit non-zero on any divergence above tolerance.
 
 **Tolerances** (see top of script):
 - monetary fields: $1 absolute

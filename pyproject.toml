@@ -15,3 +15,12 @@ dependencies = [
 dev = [
     "pytest>=9.0.3",
 ]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: slow tests that need external prerequisites (Node, local data caches). Opt in with `-m integration`.",
+]
+# Default run skips integration tests to keep `pytest` fast. Run the full suite
+# explicitly with `uv run pytest -m ''` or just the integration tests with
+# `uv run pytest -m integration`.
+addopts = "-m 'not integration'"

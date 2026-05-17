@@ -79,18 +79,19 @@ Every run compares against **both** `buy_hold` and `dca_monthly` benchmarks on
 the same ticker, window, and budget (when not redundant with the strategy
 itself).
 
-## Parity check (Python vs browser JS)
-
-The interactive reports re-run the backtest in the browser via `docs/engine.js` — a
-hand-written port of the Python engine. If they drift, users see different numbers
-than what the agent computed. `scripts/check_engine_parity.py` runs every committed
-report through both engines and exits non-zero on any meaningful divergence.
+## Tests
 
 ```sh
-uv run python scripts/check_engine_parity.py
+uv run pytest                    # 81 unit tests, fully offline, ~0.3s
+uv run pytest -m integration     # parity check (Python vs browser JS); needs Node
+uv run pytest -m ""              # all tests
 ```
 
-Requires Node on `PATH`. See [`scripts/README.md`](scripts/README.md) for details.
+The integration suite runs every committed report through both engines
+(`src/engine.py` and `docs/engine.js`) and fails if any metric diverges past
+tolerance. Parameterized one test per report so failures point at the exact
+file + metric. See [`scripts/README.md`](scripts/README.md) for the
+standalone script.
 
 ## Conventions
 
