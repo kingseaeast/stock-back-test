@@ -24,3 +24,6 @@ markers = [
 # explicitly with `uv run pytest -m ''` or just the integration tests with
 # `uv run pytest -m integration`.
 addopts = "-m 'not integration'"
+# Ensure `src` and `scripts` are importable when the project itself isn't
+# installed as a package (e.g. CI runs `uv sync --no-install-project`).
+pythonpath = ["."]
