@@ -193,5 +193,5 @@ def run(config: RunConfig, prices: pd.DataFrame | None = None) -> Result:
 
 
 def _build_run_id(config: RunConfig) -> str:
-    ts = pd.Timestamp.utcnow().strftime("%Y%m%d-%H%M%S")
+    ts = pd.Timestamp.now(tz="UTC").strftime("%Y%m%d-%H%M%S")
     return f"{ts}_{config.strategy}_{config.ticker.upper()}"
