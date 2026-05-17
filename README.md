@@ -79,6 +79,19 @@ Every run compares against **both** `buy_hold` and `dca_monthly` benchmarks on
 the same ticker, window, and budget (when not redundant with the strategy
 itself).
 
+## Parity check (Python vs browser JS)
+
+The interactive reports re-run the backtest in the browser via `docs/engine.js` — a
+hand-written port of the Python engine. If they drift, users see different numbers
+than what the agent computed. `scripts/check_engine_parity.py` runs every committed
+report through both engines and exits non-zero on any meaningful divergence.
+
+```sh
+uv run python scripts/check_engine_parity.py
+```
+
+Requires Node on `PATH`. See [`scripts/README.md`](scripts/README.md) for details.
+
 ## Conventions
 
 - Idle cash earns 0% in this model. Reports state this in the header.
