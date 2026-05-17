@@ -13,7 +13,7 @@ import plotly.offline as pio
 from plotly.subplots import make_subplots
 
 from . import strategies
-from .engine import Result, StrategyRun
+from .engine import Result, StrategyRun, Trade
 
 PLOTLY_JS_FILENAME = "plotly.min.js"  # written once into docs/ and referenced relatively
 PALETTE = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
@@ -39,6 +39,56 @@ def _stats_row(label: str, run: StrategyRun, *, is_strategy: bool) -> str:
         f"<td>{_format_pct(m['max_drawdown'])}</td>"
         f"<td>{int(m['n_buys'])}</td>"
         f"<td>{int(m['n_sells'])}</td></tr>"
+    )
+
+
+def _trade_log_html(trades: list[Trade], strategy_name: str) -> str:
+    """Render the strategy's trade log as a scrollable table."""
+    if not trades:
+        return (
+            "<section><h2>Trade log</h2>"
+            "<p class='muted'>No trades executed.</p></section>"
+        )
+
+    rows = []
+    running_shares = 0.0
+    running_cash_in = 0.0
+    for i, t in enumerate(trades, start=1):
+        if t.side == "buy":
+            running_shares += t.shares
+            running_cash_in += t.notional + t.commission
+            side_class = "buy"
+        else:
+            running_shares -= t.shares
+            running_cash_in -= t.notional - t.commission
+            side_class = "sell"
+        rows.append(
+            f"<tr>"
+            f"<td class='num'>{i}</td>"
+            f"<td>{t.date.strftime('%Y-%m-%d')}</td>"
+            f"<td class='side {side_class}'>{t.side}</td>"
+            f"<td class='num'>{t.shares:,.4f}</td>"
+            f"<td class='num'>{_format_money(t.price)}</td>"
+            f"<td class='num'>{_format_money(t.notional)}</td>"
+            f"<td class='num'>{_format_money(t.commission)}</td>"
+            f"<td class='num'>{running_shares:,.4f}</td>"
+            f"</tr>"
+        )
+
+    n_buys = sum(1 for t in trades if t.side == "buy")
+    n_sells = sum(1 for t in trades if t.side == "sell")
+    return (
+        f"<section><h2>Trade log <span class='muted'>"
+        f"({len(trades)} trades — {n_buys} buys, {n_sells} sells)</span></h2>"
+        "<div class='trade-log-wrap'><table class='trade-log'>"
+        "<thead><tr>"
+        "<th class='num'>#</th><th>Date</th><th>Side</th>"
+        "<th class='num'>Shares</th><th class='num'>Exec price</th>"
+        "<th class='num'>Notional</th><th class='num'>Commission</th>"
+        "<th class='num'>Shares held</th>"
+        "</tr></thead><tbody>"
+        + "".join(rows)
+        + "</tbody></table></div></section>"
     )
 
 
@@ -212,12 +262,24 @@ def render(result: Result, output_path: Path) -> Path:
     .meta { color: #555; margin: 4px 0; }
     .description { color: #444; font-size: 0.95em; margin: 6px 0 12px; line-height: 1.55; max-width: 850px; }
     .note { color: #888; font-size: 0.9em; margin-top: 12px; }
+    .muted { color: #888; font-weight: 400; font-size: 0.85em; }
+    section { margin-top: 28px; }
+    section h2 { margin-bottom: 8px; }
     table.stats { border-collapse: collapse; width: 100%; margin-top: 12px; }
     table.stats th, table.stats td { padding: 8px 12px; border-bottom: 1px solid #eee; text-align: right; }
     table.stats th:first-child { text-align: left; }
     table.stats thead th { background: #fafafa; }
     table.stats tr.strategy-row { background: #fffaf0; font-weight: 600; }
     code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; }
+    .trade-log-wrap { max-height: 480px; overflow-y: auto; border: 1px solid #eee; border-radius: 4px; }
+    table.trade-log { border-collapse: collapse; width: 100%; font-size: 13px; }
+    table.trade-log th, table.trade-log td { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; text-align: left; white-space: nowrap; }
+    table.trade-log thead th { background: #fafafa; position: sticky; top: 0; z-index: 1; }
+    table.trade-log .num { text-align: right; font-variant-numeric: tabular-nums; }
+    table.trade-log .side { font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; }
+    table.trade-log .side.buy { color: #2ca02c; }
+    table.trade-log .side.sell { color: #d62728; }
+    table.trade-log tbody tr:hover { background: #fafafa; }
     """
 
     full = f"""<!DOCTYPE html>
@@ -233,6 +295,7 @@ def render(result: Result, output_path: Path) -> Path:
   {header_html}
   {stats_html}
   <section><h2>Charts</h2>{chart_html}</section>
+  {_trade_log_html(result.strategy.trades, result.strategy.name)}
 </body>
 </html>
 """
