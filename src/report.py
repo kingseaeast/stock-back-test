@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pandas as pd
 import plotly.graph_objects as go
 import plotly.offline as pio
 from plotly.subplots import make_subplots
@@ -12,6 +13,7 @@ from plotly.subplots import make_subplots
 from .engine import Result, StrategyRun
 
 PLOTLY_JS_FILENAME = "plotly.min.js"  # written once into docs/ and referenced relatively
+PALETTE = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
 
 
 def _format_pct(x: float) -> str:
@@ -22,10 +24,11 @@ def _format_money(x: float) -> str:
     return f"${x:,.2f}"
 
 
-def _stats_row(label: str, run: StrategyRun) -> str:
+def _stats_row(label: str, run: StrategyRun, *, is_strategy: bool) -> str:
     m = run.metrics
+    cls = " class='strategy-row'" if is_strategy else ""
     return (
-        f"<tr><th>{label}</th>"
+        f"<tr{cls}><th>{label}</th>"
         f"<td>{_format_money(m['final_value'])}</td>"
         f"<td>{_format_money(m['cash_deployed'])}</td>"
         f"<td>{_format_pct(m['total_return'])}</td>"
@@ -36,44 +39,140 @@ def _stats_row(label: str, run: StrategyRun) -> str:
     )
 
 
+def _drawdown(equity: pd.Series) -> pd.Series:
+    peak = equity.cummax()
+    # Where peak is 0 (pre-deployment days), drawdown is undefined -> fill with 0.
+    safe_peak = peak.where(peak > 0)
+    return ((equity - peak) / safe_peak).fillna(0.0).astype(float)
+
+
 def render(result: Result, output_path: Path) -> Path:
     runs = [result.strategy, *result.benchmarks]
+    cfg = result.config
 
+    # Pull price + (optionally) F&G data the strategy used. Re-load from cache to
+    # avoid threading them through `Result` — cheap and avoids API churn.
+    from .data.prices import load_prices
+    prices = load_prices(cfg.ticker, cfg.start, cfg.end)
+    show_fg = cfg.strategy == "fear_greed"
+    fg_series: pd.Series | None = None
+    fg_index_col = "fear_greed"
+    if show_fg:
+        from .data.fear_greed import load_fear_greed
+        fg_index_col = cfg.params.get("index_type", "fear_greed")
+        fg_df = load_fear_greed(cfg.start, cfg.end)
+        fg_series = fg_df[fg_index_col].reindex(prices.index.union(fg_df.index)).ffill().reindex(prices.index)
+
+    # Subplot layout
+    rows = 5 if show_fg else 4
+    row_heights = [0.30, 0.15, 0.20, 0.10, 0.25] if show_fg else [0.32, 0.18, 0.25, 0.25]
+    titles = [
+        "Equity curves (same total budget)",
+        "Drawdown",
+        f"{cfg.ticker} price + strategy trades",
+        "Cumulative cash deployed",
+    ]
+    if show_fg:
+        titles.append(f"CNN {fg_index_col.replace('_', ' ').title()}")
     fig = make_subplots(
-        rows=2, cols=1, shared_xaxes=True,
-        row_heights=[0.7, 0.3], vertical_spacing=0.08,
-        subplot_titles=("Equity curves (same total budget)", "Cumulative cash deployed"),
+        rows=rows, cols=1, shared_xaxes=True,
+        row_heights=row_heights, vertical_spacing=0.06,
+        subplot_titles=titles,
     )
-    palette = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
+
+    # Row 1: equity curves
     for i, run in enumerate(runs):
-        color = palette[i % len(palette)]
-        fig.add_trace(
-            go.Scatter(x=run.equity.index, y=run.equity.values, name=run.name, line=dict(color=color)),
-            row=1, col=1,
-        )
         fig.add_trace(
             go.Scatter(
-                x=run.cash_deployed.index, y=run.cash_deployed.values,
-                name=f"{run.name} deployed", line=dict(color=color, dash="dot"),
-                showlegend=False,
+                x=run.equity.index, y=run.equity.values, name=run.name,
+                line=dict(color=PALETTE[i % len(PALETTE)]),
+            ),
+            row=1, col=1,
+        )
+    fig.update_yaxes(title_text="Value ($)", row=1, col=1)
+
+    # Row 2: drawdown
+    for i, run in enumerate(runs):
+        dd = _drawdown(run.equity)
+        fig.add_trace(
+            go.Scatter(
+                x=dd.index, y=(dd * 100).values, name=f"{run.name} dd",
+                line=dict(color=PALETTE[i % len(PALETTE)]), showlegend=False,
             ),
             row=2, col=1,
         )
-    fig.update_yaxes(title_text="Portfolio value ($)", row=1, col=1)
-    fig.update_yaxes(title_text="Cash deployed ($)", row=2, col=1)
+    fig.update_yaxes(title_text="Drawdown (%)", row=2, col=1)
+
+    # Row 3: price with strategy's trade markers
+    fig.add_trace(
+        go.Scatter(
+            x=prices.index, y=prices["adj_close"].astype(float),
+            name=f"{cfg.ticker} adj close", line=dict(color="#555"), showlegend=False,
+        ),
+        row=3, col=1,
+    )
+    buy_trades = [t for t in result.strategy.trades if t.side == "buy"]
+    sell_trades = [t for t in result.strategy.trades if t.side == "sell"]
+    if buy_trades:
+        fig.add_trace(
+            go.Scatter(
+                x=[t.date for t in buy_trades],
+                y=[float(prices["adj_close"].loc[t.date]) for t in buy_trades],
+                mode="markers", name="buy",
+                marker=dict(symbol="triangle-up", size=10, color="#2ca02c"),
+            ),
+            row=3, col=1,
+        )
+    if sell_trades:
+        fig.add_trace(
+            go.Scatter(
+                x=[t.date for t in sell_trades],
+                y=[float(prices["adj_close"].loc[t.date]) for t in sell_trades],
+                mode="markers", name="sell",
+                marker=dict(symbol="triangle-down", size=10, color="#d62728"),
+            ),
+            row=3, col=1,
+        )
+    fig.update_yaxes(title_text="Price ($)", row=3, col=1)
+
+    # Row 4: cumulative cash deployed
+    for i, run in enumerate(runs):
+        fig.add_trace(
+            go.Scatter(
+                x=run.cash_deployed.index, y=run.cash_deployed.values,
+                name=f"{run.name} deployed", line=dict(color=PALETTE[i % len(PALETTE)], dash="dot"),
+                showlegend=False,
+            ),
+            row=4, col=1,
+        )
+    fig.update_yaxes(title_text="Deployed ($)", row=4, col=1)
+
+    # Row 5: F&G index with threshold lines
+    if show_fg and fg_series is not None:
+        buy_below = float(cfg.params.get("buy_below", 25))
+        exit_above = float(cfg.params.get("exit_above", 75))
+        fig.add_trace(
+            go.Scatter(
+                x=fg_series.index, y=fg_series.values, name=fg_index_col,
+                line=dict(color="#8e44ad"), showlegend=False,
+            ),
+            row=5, col=1,
+        )
+        fig.add_hline(y=buy_below, line=dict(color="#2ca02c", dash="dash"), row=5, col=1,
+                      annotation_text=f"buy < {buy_below}", annotation_position="top left")
+        fig.add_hline(y=exit_above, line=dict(color="#d62728", dash="dash"), row=5, col=1,
+                      annotation_text=f"exit > {exit_above}", annotation_position="bottom left")
+        fig.update_yaxes(title_text="F&G score", range=[0, 100], row=5, col=1)
+
     fig.update_layout(
-        height=700, hovermode="x unified",
-        legend=dict(orientation="h", y=-0.18),
+        height=240 * rows, hovermode="x unified",
+        legend=dict(orientation="h", y=-0.10),
         margin=dict(l=60, r=30, t=60, b=60),
     )
 
-    # Reports live under docs/runs/, plotly.min.js under docs/. Reference is "../plotly.min.js".
     _ensure_plotly_js(output_path)
-    chart_html = fig.to_html(
-        full_html=False, include_plotlyjs=False, div_id="chart",
-    )
+    chart_html = fig.to_html(full_html=False, include_plotlyjs=False, div_id="chart")
 
-    cfg = result.config
     params_json = json.dumps(cfg.params or {})
     header_html = f"""
     <header>
@@ -89,13 +188,15 @@ def render(result: Result, output_path: Path) -> Path:
     </header>
     """
 
+    stats_rows = [_stats_row(result.strategy.name, result.strategy, is_strategy=True)]
+    stats_rows += [_stats_row(b.name, b, is_strategy=False) for b in result.benchmarks]
     stats_html = (
         "<section><h2>Summary</h2>"
         "<table class='stats'>"
         "<thead><tr><th></th><th>Final value</th><th>Cash deployed</th>"
         "<th>Total return</th><th>CAGR (approx)</th><th>Max drawdown</th>"
         "<th>Buys</th><th>Sells</th></tr></thead><tbody>"
-        + "".join(_stats_row(run.name, run) for run in runs)
+        + "".join(stats_rows)
         + "</tbody></table></section>"
     )
 
@@ -108,6 +209,7 @@ def render(result: Result, output_path: Path) -> Path:
     table.stats th, table.stats td { padding: 8px 12px; border-bottom: 1px solid #eee; text-align: right; }
     table.stats th:first-child { text-align: left; }
     table.stats thead th { background: #fafafa; }
+    table.stats tr.strategy-row { background: #fffaf0; font-weight: 600; }
     code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; }
     """
 
@@ -134,10 +236,10 @@ def render(result: Result, output_path: Path) -> Path:
 
 def _ensure_plotly_js(report_path: Path) -> None:
     """Write Plotly's bundled minified JS into docs/ once so every report can share it."""
-    docs_dir = report_path.parent.parent  # docs/runs/*.html -> docs/
+    docs_dir = report_path.parent.parent
     js_path = docs_dir / PLOTLY_JS_FILENAME
     if js_path.exists():
         return
-    js_source = pio.get_plotlyjs()  # plotly.offline.get_plotlyjs()
+    js_source = pio.get_plotlyjs()
     docs_dir.mkdir(parents=True, exist_ok=True)
     js_path.write_text(js_source, encoding="utf-8")

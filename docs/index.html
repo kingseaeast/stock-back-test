@@ -12,19 +12,39 @@
     <p class="tagline">Long-term, low-touch strategies. Reports generated locally by an AI agent.</p>
   </header>
   <main>
+    <section class="filters" id="filters" hidden>
+      <label>
+        Strategy
+        <select id="filter-strategy"><option value="">All</option></select>
+      </label>
+      <label>
+        Ticker
+        <input id="filter-ticker" type="text" placeholder="e.g. SPY" autocomplete="off" />
+      </label>
+      <label>
+        From
+        <input id="filter-from" type="date" />
+      </label>
+      <label>
+        To
+        <input id="filter-to" type="date" />
+      </label>
+      <button type="button" id="filter-clear">Clear</button>
+      <span class="count" id="count"></span>
+    </section>
     <p id="status" class="muted">Loading runs…</p>
     <table id="runs" hidden>
       <thead>
         <tr>
-          <th>Date</th>
-          <th>Strategy</th>
-          <th>Ticker</th>
-          <th>Period</th>
-          <th class="num">Budget</th>
-          <th class="num">Final value</th>
-          <th class="num">Total return</th>
-          <th class="num">CAGR</th>
-          <th class="num">Max DD</th>
+          <th data-sort="timestamp">Date <span class="sort-indicator"></span></th>
+          <th data-sort="strategy">Strategy <span class="sort-indicator"></span></th>
+          <th data-sort="ticker">Ticker <span class="sort-indicator"></span></th>
+          <th data-sort="period">Period <span class="sort-indicator"></span></th>
+          <th class="num" data-sort="total_budget">Budget <span class="sort-indicator"></span></th>
+          <th class="num" data-sort="final_value">Final value <span class="sort-indicator"></span></th>
+          <th class="num" data-sort="total_return">Total return <span class="sort-indicator"></span></th>
+          <th class="num" data-sort="cagr">CAGR <span class="sort-indicator"></span></th>
+          <th class="num" data-sort="max_drawdown">Max DD <span class="sort-indicator"></span></th>
           <th></th>
         </tr>
       </thead>
@@ -33,8 +53,9 @@
   </main>
   <footer>
     <p class="muted">
-      Source: this repo. Reports are committed HTML files in <code>docs/runs/</code>; the
-      list comes from <code>docs/runs.json</code>.
+      Reports are committed HTML files in <code>docs/runs/</code>; the
+      list comes from <code>docs/runs.json</code>. Source on
+      <a href="https://github.com/kingseaeast/stock-back-test">GitHub</a>.
     </p>
   </footer>
   <script src="app.js"></script>

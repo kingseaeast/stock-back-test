@@ -146,12 +146,13 @@ def _simulate(
 def _run_one(
     name: str,
     strategy_cls: type,
-    prices: pd.DataFrame,
+    context: dict[str, pd.DataFrame],
     config: RunConfig,
     params: dict[str, Any],
 ) -> StrategyRun:
     strategy = strategy_cls()
-    orders = strategy.orders(prices, config.total_budget, params)
+    orders = strategy.orders(context, config.total_budget, params)
+    prices = context["prices"]
     equity, deployed, trades = _simulate(prices, orders, config.commission_bps, config.slippage_bps)
     n_buys = sum(1 for t in trades if t.side == "buy")
     n_sells = sum(1 for t in trades if t.side == "sell")
@@ -164,29 +165,69 @@ def _run_one(
     )
 
 
-def run(config: RunConfig, prices: pd.DataFrame | None = None) -> Result:
-    """Execute the strategy in `config` against `prices` (loaded if not given),
-    plus a buy-and-hold benchmark on the same data.
+def _build_context(
+    requirements: frozenset[str],
+    config: RunConfig,
+    prices: pd.DataFrame | None,
+    extras: dict[str, pd.DataFrame] | None,
+) -> dict[str, pd.DataFrame]:
+    """Load every data source the strategy declared it needs.
+
+    Sources beyond `prices` are aligned to the prices' trading-day index and
+    forward-filled (so a sentiment reading taken on Saturday applies to Monday).
     """
+    extras = extras or {}
     if prices is None:
         from .data.prices import load_prices
         prices = load_prices(config.ticker, config.start, config.end)
 
+    context: dict[str, pd.DataFrame] = {"prices": prices}
+
+    if "fear_greed" in requirements:
+        if "fear_greed" in extras:
+            fg = extras["fear_greed"]
+        else:
+            from .data.fear_greed import load_fear_greed
+            fg = load_fear_greed(config.start, config.end)
+        # Align to trading days. F&G is daily including weekends/holidays; forward-fill.
+        fg_aligned = fg.reindex(prices.index.union(fg.index)).sort_index().ffill().reindex(prices.index)
+        context["fear_greed"] = fg_aligned
+
+    unknown = requirements - set(context)
+    if unknown:
+        raise ValueError(f"Unknown data requirements: {sorted(unknown)}")
+    return context
+
+
+def run(
+    config: RunConfig,
+    prices: pd.DataFrame | None = None,
+    extras: dict[str, pd.DataFrame] | None = None,
+) -> Result:
+    """Execute the strategy in `config` plus benchmarks (buy_hold and DCA-monthly).
+
+    `prices` and `extras` allow tests to inject data without hitting the network.
+    """
     strategy_cls = strategies.get(config.strategy)
+    context = _build_context(strategy_cls.data_requirements, config, prices, extras)
     strategy_run = _run_one(
-        config.strategy, strategy_cls, prices, config, config.params
+        config.strategy, strategy_cls, context, config, config.params
     )
 
+    # Benchmarks always operate on prices only.
+    price_context = {"prices": context["prices"]}
     benchmarks: list[StrategyRun] = []
     if config.strategy != "buy_hold":
-        bh_run = _run_one(
-            "buy_hold",
-            strategies.get("buy_hold"),
-            prices,
-            config,
-            params={},
+        benchmarks.append(
+            _run_one("buy_hold", strategies.get("buy_hold"), price_context, config, params={})
         )
-        benchmarks.append(bh_run)
+    if config.strategy != "dca":
+        benchmarks.append(
+            _run_one(
+                "dca_monthly", strategies.get("dca"), price_context, config,
+                params={"cadence": "monthly"},
+            )
+        )
 
     run_id = _build_run_id(config)
     return Result(config=config, strategy=strategy_run, benchmarks=benchmarks, run_id=run_id)

@@ -34,6 +34,26 @@ tbody tr:hover { background: var(--bg-row); }
 a { color: var(--link); text-decoration: none; }
 a:hover { text-decoration: underline; }
 code { background: var(--bg-row); padding: 1px 6px; border-radius: 4px; font-size: 0.9em; }
+.filters {
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: end;
+  padding: 12px; border: 1px solid var(--border); border-radius: 6px;
+  background: #fcfcfd; margin-bottom: 16px;
+}
+.filters label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); }
+.filters input, .filters select {
+  padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px;
+  font-size: 14px; min-width: 140px; background: white;
+}
+.filters button {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 4px;
+  background: white; cursor: pointer; font-size: 14px;
+}
+.filters button:hover { background: var(--bg-row); }
+.filters .count { color: var(--muted); font-size: 13px; margin-left: auto; }
+th[data-sort] { cursor: pointer; user-select: none; }
+th[data-sort]:hover { background: #eef2f5; }
+.sort-indicator { color: var(--link); font-size: 0.85em; margin-left: 4px; }
+.center { text-align: center; }
 footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; }
 
 @media (max-width: 700px) {

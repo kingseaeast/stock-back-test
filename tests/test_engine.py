@@ -81,11 +81,14 @@ class TestBuyHoldClosedForm:
         expected = shares * float(linear_prices["adj_close"].iloc[-1])
         assert result.strategy.metrics["final_value"] == pytest.approx(expected, rel=1e-9)
 
-    def test_no_benchmark_when_strategy_is_buy_hold(self, flat_prices):
-        # buy_hold-as-strategy shouldn't run buy_hold again as a redundant benchmark
+    def test_no_redundant_buy_hold_benchmark_when_strategy_is_buy_hold(self, flat_prices):
+        # buy_hold-as-strategy shouldn't run itself again as a redundant benchmark,
+        # but it still gets dca_monthly as the second always-on benchmark.
         config = _config("buy_hold", flat_prices)
         result = run(config, prices=flat_prices)
-        assert result.benchmarks == []
+        names = [b.name for b in result.benchmarks]
+        assert "buy_hold" not in names
+        assert names == ["dca_monthly"]
 
 
 class TestDCADeployment:
@@ -109,6 +112,8 @@ class TestDCADeployment:
         assert dca_final < bh_final, "DCA should lag buy-hold in a monotonically rising market"
 
     def test_buy_hold_benchmark_included_for_dca(self, flat_prices):
+        # DCA is the strategy here, so dca_monthly is *not* added as a benchmark
+        # (it would be a duplicate). Only buy_hold runs as benchmark.
         config = _config("dca", flat_prices)
         result = run(config, prices=flat_prices)
         assert [b.name for b in result.benchmarks] == ["buy_hold"]

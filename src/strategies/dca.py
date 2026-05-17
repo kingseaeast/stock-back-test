@@ -18,13 +18,15 @@ _CADENCE_FREQ = {
 
 class DCA:
     name = "dca"
+    data_requirements = frozenset({"prices"})
 
     def orders(
         self,
-        prices: pd.DataFrame,
+        context: dict[str, pd.DataFrame],
         total_budget: float,
         params: dict[str, Any],
     ) -> list[Order]:
+        prices = context["prices"]
         if prices.empty:
             return []
 

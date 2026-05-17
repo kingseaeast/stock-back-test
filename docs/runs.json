@@ -1,43 +1,7 @@
 [
   {
-    "run_id": "20260517-013420_dca_SPY",
-    "timestamp": "2026-05-17T01:34:20+00:00",
-    "strategy": "dca",
-    "ticker": "SPY",
-    "start": "2015-01-01",
-    "end": "2024-12-31",
-    "total_budget": 12000.0,
-    "params": {
-      "cadence": "monthly"
-    },
-    "metrics": {
-      "final_value": 25560.27514036782,
-      "cash_deployed": 11999.999999999985,
-      "total_return": 1.1300229283639873,
-      "cagr": 0.07857889840232168,
-      "max_drawdown": -0.32887476919200737,
-      "n_buys": 119.0,
-      "n_sells": 0.0
-    },
-    "benchmarks": [
-      {
-        "name": "buy_hold",
-        "metrics": {
-          "final_value": 41456.80826014567,
-          "cash_deployed": 12000.0,
-          "total_return": 2.4547340216788056,
-          "cagr": 0.13204471689188657,
-          "max_drawdown": -0.3371727469129618,
-          "n_buys": 1.0,
-          "n_sells": 0.0
-        }
-      }
-    ],
-    "html": "runs/20260517-013420_dca_SPY.html"
-  },
-  {
-    "run_id": "20260517-013421_buy_hold_SPY",
-    "timestamp": "2026-05-17T01:34:21+00:00",
+    "run_id": "20260517-034925_buy_hold_SPY",
+    "timestamp": "2026-05-17T03:49:25+00:00",
     "strategy": "buy_hold",
     "ticker": "SPY",
     "start": "2015-01-01",
@@ -49,16 +13,200 @@
       "cash_deployed": 12000.0,
       "total_return": 2.4547352839173726,
       "cagr": 0.13204475826981388,
-      "max_drawdown": -0.3371726642847273,
+      "max_drawdown": -0.33717258279330087,
       "n_buys": 1.0,
       "n_sells": 0.0
     },
-    "benchmarks": [],
-    "html": "runs/20260517-013421_buy_hold_SPY.html"
+    "benchmarks": [
+      {
+        "name": "dca_monthly",
+        "metrics": {
+          "final_value": 25560.276113834352,
+          "cash_deployed": 11999.999999999985,
+          "total_return": 1.1300230094861985,
+          "cagr": 0.07857890251179156,
+          "max_drawdown": -0.328874604427279,
+          "n_buys": 119.0,
+          "n_sells": 0.0
+        }
+      }
+    ],
+    "html": "runs/20260517-034925_buy_hold_SPY.html"
   },
   {
-    "run_id": "20260517-013421_dca_QQQ",
-    "timestamp": "2026-05-17T01:34:21+00:00",
+    "run_id": "20260517-034926_dca_SPY",
+    "timestamp": "2026-05-17T03:49:26+00:00",
+    "strategy": "dca",
+    "ticker": "SPY",
+    "start": "2015-01-01",
+    "end": "2024-12-31",
+    "total_budget": 12000.0,
+    "params": {
+      "cadence": "monthly"
+    },
+    "metrics": {
+      "final_value": 25560.275670610572,
+      "cash_deployed": 11999.999999999985,
+      "total_return": 1.1300229725508837,
+      "cagr": 0.07857890064073114,
+      "max_drawdown": -0.32887472041536814,
+      "n_buys": 119.0,
+      "n_sells": 0.0
+    },
+    "benchmarks": [
+      {
+        "name": "buy_hold",
+        "metrics": {
+          "final_value": 41456.80826014567,
+          "cash_deployed": 12000.0,
+          "total_return": 2.4547340216788056,
+          "cagr": 0.13204471689188657,
+          "max_drawdown": -0.3371726975633843,
+          "n_buys": 1.0,
+          "n_sells": 0.0
+        }
+      }
+    ],
+    "html": "runs/20260517-034926_dca_SPY.html"
+  },
+  {
+    "run_id": "20260517-034927_dca_btd_SPY",
+    "timestamp": "2026-05-17T03:49:27+00:00",
+    "strategy": "dca_btd",
+    "ticker": "SPY",
+    "start": "2015-01-01",
+    "end": "2024-12-31",
+    "total_budget": 12000.0,
+    "params": {
+      "cadence": "monthly",
+      "dip_threshold_pct": 0.1,
+      "dip_buys": 4
+    },
+    "metrics": {
+      "final_value": 29183.43038939829,
+      "cash_deployed": 12000.000000000018,
+      "total_return": 1.4319525324498539,
+      "cagr": 0.09297786379636253,
+      "max_drawdown": -0.3321267329905535,
+      "n_buys": 123.0,
+      "n_sells": 0.0
+    },
+    "benchmarks": [
+      {
+        "name": "buy_hold",
+        "metrics": {
+          "final_value": 41456.81962029174,
+          "cash_deployed": 12000.0,
+          "total_return": 2.454734968357645,
+          "cagr": 0.13204474792533039,
+          "max_drawdown": -0.33717271363429996,
+          "n_buys": 1.0,
+          "n_sells": 0.0
+        }
+      },
+      {
+        "name": "dca_monthly",
+        "metrics": {
+          "final_value": 25560.276181084973,
+          "cash_deployed": 11999.999999999985,
+          "total_return": 1.130023015090417,
+          "cagr": 0.07857890279568869,
+          "max_drawdown": -0.3288747341098778,
+          "n_buys": 119.0,
+          "n_sells": 0.0
+        }
+      }
+    ],
+    "html": "runs/20260517-034927_dca_btd_SPY.html"
+  },
+  {
+    "run_id": "20260517-034928_rsi_SPY",
+    "timestamp": "2026-05-17T03:49:28+00:00",
+    "strategy": "rsi",
+    "ticker": "SPY",
+    "start": "2015-01-01",
+    "end": "2024-12-31",
+    "total_budget": 12000.0,
+    "params": {
+      "period": 14,
+      "oversold": 30,
+      "overbought": 70,
+      "start_in_cash": true
+    },
+    "metrics": {
+      "final_value": 21601.871217890934,
+      "cash_deployed": 12000.0,
+      "total_return": 0.8001559348242444,
+      "cagr": 0.06057528406465629,
+      "max_drawdown": -0.2831904634785542,
+      "n_buys": 11.0,
+      "n_sells": 11.0
+    },
+    "benchmarks": [
+      {
+        "name": "buy_hold",
+        "metrics": {
+          "final_value": 41456.8038801495,
+          "cash_deployed": 12000.0,
+          "total_return": 2.454733656679125,
+          "cagr": 0.1320447049266893,
+          "max_drawdown": -0.3371726975633843,
+          "n_buys": 1.0,
+          "n_sells": 0.0
+        }
+      },
+      {
+        "name": "dca_monthly",
+        "metrics": {
+          "final_value": 25560.27346332419,
+          "cash_deployed": 11999.999999999985,
+          "total_return": 1.1300227886103515,
+          "cagr": 0.07857889132271434,
+          "max_drawdown": -0.328874718947326,
+          "n_buys": 119.0,
+          "n_sells": 0.0
+        }
+      }
+    ],
+    "html": "runs/20260517-034928_rsi_SPY.html"
+  },
+  {
+    "run_id": "20260517-034928_buy_hold_QQQ",
+    "timestamp": "2026-05-17T03:49:28+00:00",
+    "strategy": "buy_hold",
+    "ticker": "QQQ",
+    "start": "2018-01-01",
+    "end": "2024-12-31",
+    "total_budget": 12000.0,
+    "params": {},
+    "metrics": {
+      "final_value": 40149.99304135538,
+      "cash_deployed": 12000.0,
+      "total_return": 2.345832753446282,
+      "cagr": 0.18844885570751346,
+      "max_drawdown": -0.3511872087178522,
+      "n_buys": 1.0,
+      "n_sells": 0.0
+    },
+    "benchmarks": [
+      {
+        "name": "dca_monthly",
+        "metrics": {
+          "final_value": 23897.199559107557,
+          "cash_deployed": 12000.000000000011,
+          "total_return": 0.9914332965922947,
+          "cagr": 0.1034870450272729,
+          "max_drawdown": -0.2736396634334464,
+          "n_buys": 83.0,
+          "n_sells": 0.0
+        }
+      }
+    ],
+    "html": "runs/20260517-034928_buy_hold_QQQ.html"
+  },
+  {
+    "run_id": "20260517-034929_dca_QQQ",
+    "timestamp": "2026-05-17T03:49:29+00:00",
     "strategy": "dca",
     "ticker": "QQQ",
     "start": "2018-01-01",
@@ -68,11 +216,11 @@
       "cadence": "monthly"
     },
     "metrics": {
-      "final_value": 23897.1992255213,
+      "final_value": 23897.1982296756,
       "cash_deployed": 12000.000000000011,
-      "total_return": 0.99143326879344,
-      "cagr": 0.10348704282522014,
-      "max_drawdown": -0.27363960966464757,
+      "total_return": 0.9914331858062981,
+      "cagr": 0.10348703625149391,
+      "max_drawdown": -0.2736396055318569,
       "n_buys": 83.0,
       "n_sells": 0.0
     },
@@ -80,16 +228,65 @@
       {
         "name": "buy_hold",
         "metrics": {
-          "final_value": 40150.00111932013,
+          "final_value": 40150.01727525939,
           "cash_deployed": 12000.0,
-          "total_return": 2.3458334266100107,
-          "cagr": 0.1884488898894181,
-          "max_drawdown": -0.351187309497777,
+          "total_return": 2.3458347729382827,
+          "cagr": 0.18844895825325114,
+          "max_drawdown": -0.35118715832787806,
           "n_buys": 1.0,
           "n_sells": 0.0
         }
       }
     ],
-    "html": "runs/20260517-013421_dca_QQQ.html"
+    "html": "runs/20260517-034929_dca_QQQ.html"
+  },
+  {
+    "run_id": "20260517-034929_fear_greed_SPY",
+    "timestamp": "2026-05-17T03:49:29+00:00",
+    "strategy": "fear_greed",
+    "ticker": "SPY",
+    "start": "2025-06-01",
+    "end": "2026-05-15",
+    "total_budget": 12000.0,
+    "params": {
+      "buy_below": 40,
+      "exit_above": 60
+    },
+    "metrics": {
+      "final_value": 12867.646283330074,
+      "cash_deployed": 12000.0,
+      "total_return": 0.07230385694417274,
+      "cagr": 0.07624809498749352,
+      "max_drawdown": -0.0888685286388666,
+      "n_buys": 3.0,
+      "n_sells": 3.0
+    },
+    "benchmarks": [
+      {
+        "name": "buy_hold",
+        "metrics": {
+          "final_value": 15035.91152895139,
+          "cash_deployed": 12000.0,
+          "total_return": 0.25299262741261574,
+          "cagr": 0.2679437478049045,
+          "max_drawdown": -0.08884972579331009,
+          "n_buys": 1.0,
+          "n_sells": 0.0
+        }
+      },
+      {
+        "name": "dca_monthly",
+        "metrics": {
+          "final_value": 13341.148312242332,
+          "cash_deployed": 12000.000000000004,
+          "total_return": 0.1117623593535273,
+          "cagr": 0.11797451561120798,
+          "max_drawdown": -0.07507201911779403,
+          "n_buys": 11.0,
+          "n_sells": 0.0
+        }
+      }
+    ],
+    "html": "runs/20260517-034929_fear_greed_SPY.html"
   }
 ]

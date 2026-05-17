@@ -65,16 +65,19 @@ Each run writes:
 
 Open `docs/index.html` locally, or push to GitHub and view via Pages.
 
-## Strategies (Milestone 1)
+## Strategies
 
 | Name | Description | Key params |
 | --- | --- | --- |
 | `buy_hold` | Deploy entire `--budget` on day one and hold. | — |
 | `dca` | Split `--budget` into equal contributions on a cadence (`weekly`, `biweekly`, `monthly`). | `cadence` |
+| `dca_btd` | DCA most of the budget, hold back a reserve to buy on N-day drawdowns. | `cadence`, `dip_reserve_pct`, `dip_threshold_pct`, `dip_lookback`, `dip_buys` |
+| `rsi` | All-in / all-out on Wilder RSI thresholds. Starts invested (or pass `start_in_cash`). | `period`, `oversold`, `overbought`, `start_in_cash` |
+| `fear_greed` | All-in / all-out on the CNN Fear & Greed index. Starts in cash by default. **Note: CNN's public endpoint only serves ~1 year of history.** | `buy_below`, `exit_above`, `index_type`, `start_in_market` |
 
-For every non-`buy_hold` run, **buy-and-hold runs as a benchmark** on the same
-ticker, window, and budget. (DCA-as-benchmark and the RSI / CNN Fear & Greed /
-DCA+BTD strategies arrive in Milestone 2 — see `PLAN.md`.)
+Every run compares against **both** `buy_hold` and `dca_monthly` benchmarks on
+the same ticker, window, and budget (when not redundant with the strategy
+itself).
 
 ## Conventions
 

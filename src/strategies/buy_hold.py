@@ -11,13 +11,15 @@ from .base import Action, Order
 
 class BuyHold:
     name = "buy_hold"
+    data_requirements = frozenset({"prices"})
 
     def orders(
         self,
-        prices: pd.DataFrame,
+        context: dict[str, pd.DataFrame],
         total_budget: float,
         params: dict[str, Any],
     ) -> list[Order]:
+        prices = context["prices"]
         if prices.empty:
             return []
         first_day = prices.index[0]
